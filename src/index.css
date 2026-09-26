@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+@theme {
+  --color-bg:        #0A0A0A;
+  --color-surface:   #111111;
+  --color-card:      #171717;
+  --color-elevated:  #1F1F1F;
+  --color-border:    #2B2B2B;
+  --color-text:      #FAFAFA;
+  --color-muted:     #A3A3A3;
+  --color-accent:    #D4A017;
+  --color-accent-h:  #E4B63B;
+  --color-muted-acc: #8A6B1A;
+
+  --font-sans:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: #0A0A0A;
+  color: #FAFAFA;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: #D4A01730;
+  color: #FAFAFA;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: #2B2B2B; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #D4A017; }
+
+/* Notebook grid background */
+.notebook-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Input focus ring override */
+input:focus { outline: none; }
+
+/* Hide up and down spinner arrows in number inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.skel {
+  background-color: #1C1C1C;
+  border-radius: 8px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+.skel-card {
+  background-color: #111111;
+  border: 1px solid #2B2B2B;
+  border-radius: 20px;
+  padding: 24px;
+}
+.skel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.skel-circle {
+  background-color: #1C1C1C;
+  border-radius: 50%;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes streak-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
