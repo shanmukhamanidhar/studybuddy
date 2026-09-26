@@ -6,7 +6,7 @@ import Footer from "../components/Footer";
 
 export default function LandingPage() {
   return (
-    <div style={{ backgroundColor: "#0A0A0A", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "var(--color-bg, #0A0A0A)", minHeight: "100vh", color: "var(--color-text, #FAFAFA)", transition: "background-color 0.2s ease, color 0.2s ease" }}>
       <Navbar />
       <main>
         <HeroSection />

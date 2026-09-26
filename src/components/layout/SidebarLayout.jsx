@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, getUserInitials } from "../../context/AuthContext";
+import ThemeToggle from "../ThemeToggle";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/app", icon: "🏠" },
@@ -55,7 +56,7 @@ export default function SidebarLayout({ children }) {
   const sidebarWidth = collapsed ? 76 : 240;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#0A0A0A", color: "#FAFAFA" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--color-bg, #0A0A0A)", color: "var(--color-text, #FAFAFA)", transition: "background-color 0.2s ease, color 0.2s ease" }}>
       {/* Mobile Top Bar Header */}
       <div
         className="mobile-header"
@@ -65,8 +66,8 @@ export default function SidebarLayout({ children }) {
           left: 0,
           right: 0,
           height: 60,
-          backgroundColor: "#111111",
-          borderBottom: "1px solid #1E1E1E",
+          backgroundColor: "var(--color-surface, #111111)",
+          borderBottom: "1px solid var(--color-border, #1E1E1E)",
           display: "none",
           alignItems: "center",
           justifyContent: "space-between",
@@ -80,23 +81,26 @@ export default function SidebarLayout({ children }) {
             alt="StudyBuddy"
             style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover" }}
           />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 18 }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 18, color: "var(--color-text, #FAFAFA)" }}>
             StudyBuddy
           </span>
         </div>
 
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#FAFAFA",
-            fontSize: 22,
-            cursor: "pointer",
-          }}
-        >
-          {mobileOpen ? "✕" : "☰"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--color-text, #FAFAFA)",
+              fontSize: 22,
+              cursor: "pointer",
+            }}
+          >
+            {mobileOpen ? "✕" : "☰"}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer Overlay */}
@@ -127,13 +131,14 @@ export default function SidebarLayout({ children }) {
           top: 0,
           bottom: 0,
           left: 0,
-          backgroundColor: "#111111",
-          borderRight: "1px solid #1C1C1C",
+          backgroundColor: "var(--color-surface, #111111)",
+          borderRight: "1px solid var(--color-border, #1C1C1C)",
           zIndex: 140,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           overflowX: "hidden",
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
         }}
       >
         <div>
@@ -145,7 +150,7 @@ export default function SidebarLayout({ children }) {
               display: "flex",
               alignItems: "center",
               justifyContent: collapsed ? "center" : "space-between",
-              borderBottom: "1px solid #1C1C1C",
+              borderBottom: "1px solid var(--color-border, #1C1C1C)",
             }}
           >
             <Link
@@ -176,7 +181,7 @@ export default function SidebarLayout({ children }) {
                     fontFamily: "'Space Grotesk', system-ui, sans-serif",
                     fontSize: 18,
                     fontWeight: 700,
-                    color: "#FAFAFA",
+                    color: "var(--color-text, #FAFAFA)",
                     letterSpacing: "-0.02em",
                     whiteSpace: "nowrap",
                   }}
@@ -260,11 +265,24 @@ export default function SidebarLayout({ children }) {
                 </Link>
               );
             })}
+
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--color-border, #1C1C1C)" }}>
+              <ThemeToggle
+                showLabel={!collapsed}
+                style={{
+                  width: "100%",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  border: "1px solid transparent",
+                  backgroundColor: "transparent",
+                  padding: collapsed ? "10px 0" : "10px 14px",
+                }}
+              />
+            </div>
           </nav>
         </div>
 
         {/* User Profile Footer */}
-        <div style={{ padding: "16px 12px", borderTop: "1px solid #1C1C1C", position: "relative" }} ref={dropdownRef}>
+        <div style={{ padding: "16px 12px", borderTop: "1px solid var(--color-border, #1C1C1C)", position: "relative" }} ref={dropdownRef}>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             style={{
@@ -293,7 +311,7 @@ export default function SidebarLayout({ children }) {
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  backgroundColor: "#1C1C1C",
+                  backgroundColor: "var(--color-elevated, #1C1C1C)",
                   border: "1px solid #D4A017",
                   color: "#D4A017",
                   fontSize: 12,
@@ -310,10 +328,10 @@ export default function SidebarLayout({ children }) {
 
             {!collapsed && (
               <div style={{ overflow: "hidden", flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#FAFAFA", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--color-text, #FAFAFA)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                   {displayName}
                 </p>
-                <p style={{ margin: 0, fontSize: 11, color: "#666666", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--color-muted, #666666)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                   {userProfile?.academicInfo?.semester ? `Semester ${userProfile.academicInfo.semester}` : ""}
                 </p>
               </div>
@@ -332,11 +350,11 @@ export default function SidebarLayout({ children }) {
                   bottom: 60,
                   left: collapsed ? 16 : 12,
                   width: 190,
-                  backgroundColor: "#161616",
-                  border: "1px solid #262626",
+                  backgroundColor: "var(--color-card, #161616)",
+                  border: "1px solid var(--color-border, #262626)",
                   borderRadius: 10,
                   padding: "10px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                  boxShadow: "0 8px 24px var(--color-shadow, rgba(0,0,0,0.5))",
                   zIndex: 160,
                 }}
               >
@@ -347,7 +365,7 @@ export default function SidebarLayout({ children }) {
                     display: "block",
                     padding: "8px 10px",
                     borderRadius: 6,
-                    color: "#FAFAFA",
+                    color: "var(--color-text, #FAFAFA)",
                     fontSize: 13,
                     textDecoration: "none",
                     marginBottom: 4,
@@ -355,6 +373,10 @@ export default function SidebarLayout({ children }) {
                 >
                   ⚙️ Settings
                 </Link>
+
+                <div style={{ padding: "4px 0 6px", borderBottom: "1px solid var(--color-border, #262626)", marginBottom: 6 }}>
+                  <ThemeToggle showLabel style={{ width: "100%", justifyContent: "flex-start", padding: "6px 10px" }} />
+                </div>
 
                 <button
                   onClick={handleLogout}

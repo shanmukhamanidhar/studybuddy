@@ -19,12 +19,12 @@ const inputStyle = {
   width: "100%",
   padding: "12px 16px",
   borderRadius: 12,
-  backgroundColor: "#111111",
-  border: "1px solid #2B2B2B",
-  color: "#FAFAFA",
+  backgroundColor: "var(--color-surface, #111111)",
+  border: "1px solid var(--color-border, #2B2B2B)",
+  color: "var(--color-text, #FAFAFA)",
   fontSize: 14,
   outline: "none",
-  transition: "border-color 0.2s ease",
+  transition: "border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease",
   fontFamily: "'DM Sans', sans-serif",
 };
 
@@ -124,7 +124,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "#0A0A0A", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "var(--color-bg, #0A0A0A)", minHeight: "100vh", color: "var(--color-text, #FAFAFA)", transition: "background-color 0.2s ease, color 0.2s ease" }}>
       <Navbar />
 
       <div
@@ -150,14 +150,14 @@ export default function RegisterPage() {
                 fontFamily: "'Space Grotesk', system-ui, sans-serif",
                 fontSize: 32,
                 fontWeight: 700,
-                color: "#FAFAFA",
+                color: "var(--color-text, #FAFAFA)",
                 margin: "0 0 8px",
                 letterSpacing: "-0.02em",
               }}
             >
               Create your account
             </h1>
-            <p style={{ color: "#A3A3A3", fontSize: 14, margin: 0 }}>
+            <p style={{ color: "var(--color-muted, #A3A3A3)", fontSize: 14, margin: 0 }}>
               Start organising your academic life today.
             </p>
           </div>
@@ -277,9 +277,9 @@ export default function RegisterPage() {
 
           {/* Divider */}
           <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0" }}>
-            <div style={{ flex: 1, height: 1, backgroundColor: "#2B2B2B" }} />
-            <span style={{ color: "#A3A3A3", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>or</span>
-            <div style={{ flex: 1, height: 1, backgroundColor: "#2B2B2B" }} />
+            <div style={{ flex: 1, height: 1, backgroundColor: "var(--color-border, #2B2B2B)" }} />
+            <span style={{ color: "var(--color-muted, #A3A3A3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>or</span>
+            <div style={{ flex: 1, height: 1, backgroundColor: "var(--color-border, #2B2B2B)" }} />
           </div>
 
           {/* Google Register Button */}
@@ -295,9 +295,9 @@ export default function RegisterPage() {
               gap: 10,
               padding: "12px 0",
               borderRadius: 12,
-              backgroundColor: "#111111",
-              border: "1px solid #2B2B2B",
-              color: "#FAFAFA",
+              backgroundColor: "var(--color-surface, #111111)",
+              border: "1px solid var(--color-border, #2B2B2B)",
+              color: "var(--color-text, #FAFAFA)",
               fontSize: 14,
               fontWeight: 500,
               cursor: loading ? "wait" : "pointer",
@@ -308,13 +308,13 @@ export default function RegisterPage() {
             onMouseEnter={(e) => {
               if (!loading) {
                 e.currentTarget.style.borderColor = "#D4A017";
-                e.currentTarget.style.backgroundColor = "rgba(212, 160, 23, 0.05)";
+                e.currentTarget.style.backgroundColor = "rgba(212, 160, 23, 0.08)";
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
-                e.currentTarget.style.borderColor = "#2B2B2B";
-                e.currentTarget.style.backgroundColor = "#111111";
+                e.currentTarget.style.borderColor = "var(--color-border, #2B2B2B)";
+                e.currentTarget.style.backgroundColor = "var(--color-surface, #111111)";
               }
             }}
           >

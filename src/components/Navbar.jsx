@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, getUserInitials } from "../context/AuthContext";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -67,10 +68,10 @@ export default function Navbar() {
         left: 0,
         right: 0,
         zIndex: 100,
-        backgroundColor: "#111111",
-        borderBottom: "1px solid #2B2B2B",
-        boxShadow: scrolled ? "0 12px 32px rgba(0,0,0,0.6)" : "0 4px 20px rgba(0,0,0,0.3)",
-        transition: "padding 0.3s ease, boxShadow 0.3s ease",
+        backgroundColor: "var(--color-surface, #111111)",
+        borderBottom: "1px solid var(--color-border, #2B2B2B)",
+        boxShadow: scrolled ? "0 12px 32px var(--color-shadow, rgba(0,0,0,0.6))" : "0 4px 20px var(--color-shadow, rgba(0,0,0,0.3))",
+        transition: "padding 0.3s ease, boxShadow 0.3s ease, background-color 0.2s ease, border-color 0.2s ease",
         padding: scrolled ? "12px 0" : "18px 0",
       }}
     >
@@ -177,6 +178,7 @@ export default function Navbar() {
 
         {/* Right CTA / User Profile Area */}
         <div className="sb-nav-desktop" style={{ gap: 14, alignItems: "center" }}>
+          <ThemeToggle />
           {currentUser ? (
             /* User Avatar Button & Dropdown */
             <div style={{ position: "relative" }} ref={dropdownRef}>
@@ -416,7 +418,7 @@ export default function Navbar() {
                     setMenuOpen(false);
                   }}
                   style={{
-                    color: activeTab === item.label ? "#D4A017" : "#FAFAFA",
+                    color: activeTab === item.label ? "#D4A017" : "var(--color-text, #FAFAFA)",
                     fontSize: "16px",
                     fontWeight: 600,
                     textDecoration: "none",
@@ -425,6 +427,10 @@ export default function Navbar() {
                   {item.label}
                 </a>
               ))}
+
+              <div style={{ paddingTop: 4, paddingBottom: 4 }}>
+                <ThemeToggle showLabel style={{ width: "100%", justifyContent: "flex-start" }} />
+              </div>
 
               {currentUser ? (
                 <div style={{ borderTop: "1px solid #2B2B2B", paddingTop: 14, marginTop: 4 }}>

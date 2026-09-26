@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -19,6 +20,7 @@ import BattlePage from "./pages/BattlePage";
 import DashboardPage from "./pages/DashboardPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import WeakAreasPage from "./pages/WeakAreasPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // Authenticated Platform Route Guard (Requires Onboarding)
 function PlatformRoute({ children }) {
@@ -53,10 +55,11 @@ function PublicAuthRoute({ children }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
           
           <Route
             path="/login"
@@ -213,10 +216,20 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/settings"
+            element={
+              <PlatformRoute>
+                <SettingsPage />
+              </PlatformRoute>
+            }
+          />
+
           {/* Fallback Wildcard */}
           <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

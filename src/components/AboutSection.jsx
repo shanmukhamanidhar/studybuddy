@@ -92,7 +92,7 @@ function TimelineStep({ step, index }) {
             fontFamily: "'Space Grotesk', system-ui, sans-serif",
             fontSize: "clamp(18px, 2.5vw, 22px)",
             fontWeight: 700,
-            color: "#FAFAFA",
+            color: "var(--color-text, #FAFAFA)",
             margin: "0 0 10px",
             lineHeight: 1.3,
             letterSpacing: "-0.02em",
@@ -102,7 +102,7 @@ function TimelineStep({ step, index }) {
         </h3>
         <p
           style={{
-            color: "#A3A3A3",
+            color: "var(--color-muted, #A3A3A3)",
             fontSize: 14,
             lineHeight: 1.7,
             margin: 0,
@@ -134,8 +134,8 @@ function TimelineStep({ step, index }) {
           width: 44,
           height: 44,
           borderRadius: "50%",
-          backgroundColor: step.accent ? "#D4A017" : "#1F1F1F",
-          border: step.accent ? "none" : "1px solid #2B2B2B",
+          backgroundColor: step.accent ? "#D4A017" : "var(--color-elevated, #1F1F1F)",
+          border: step.accent ? "none" : "1px solid var(--color-border, #2B2B2B)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -161,9 +161,10 @@ export default function AboutSection() {
     <section
       id="about"
       style={{
-        backgroundColor: "#111111",
-        borderTop: "1px solid #2B2B2B",
+        backgroundColor: "var(--color-surface, #111111)",
+        borderTop: "1px solid var(--color-border, #2B2B2B)",
         padding: "112px 24px",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
@@ -192,7 +193,7 @@ export default function AboutSection() {
               fontFamily: "'Space Grotesk', system-ui, sans-serif",
               fontSize: "clamp(32px, 5vw, 54px)",
               fontWeight: 800,
-              color: "#FAFAFA",
+              color: "var(--color-text, #FAFAFA)",
               margin: "0 0 20px",
               letterSpacing: "-0.03em",
               lineHeight: 1.1,
@@ -205,7 +206,7 @@ export default function AboutSection() {
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              color: "#A3A3A3",
+              color: "var(--color-muted, #A3A3A3)",
               fontSize: 16,
               lineHeight: 1.7,
               maxWidth: 520,
@@ -228,7 +229,7 @@ export default function AboutSection() {
               left: "50%",
               transform: "translateX(-50%)",
               width: 1,
-              backgroundColor: "#2B2B2B",
+              backgroundColor: "var(--color-border, #2B2B2B)",
               zIndex: 0,
             }}
           />

@@ -38,10 +38,10 @@ function getTimeGreeting() {
 }
 
 const card = {
-  backgroundColor: "#111111",
-  border: "1px solid #1E1E1E",
+  backgroundColor: "var(--color-surface, #111111)",
+  border: "1px solid var(--color-border, #1E1E1E)",
   borderRadius: 20,
-  boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+  boxShadow: "0 8px 32px var(--color-shadow, rgba(0,0,0,0.35))",
 };
 
 const cardHover = {
@@ -218,15 +218,15 @@ export default function HomePage() {
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
               <Logo size={44} />
               <div style={{ flex: 1 }}>
-                <h1 style={{ fontFamily: FONT, fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 700, color: "#FAFAFA", margin: 0, letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 12 }}>
+                <h1 style={{ fontFamily: FONT, fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 700, color: "var(--color-text, #FAFAFA)", margin: 0, letterSpacing: "-0.02em", display: "flex", alignItems: "center", gap: 12 }}>
                   {greeting}, {name}. <PartyPopper size={28} color={GOLD} style={{ opacity: 0.7 }} />
                 </h1>
-                <p style={{ color: "#777", fontSize: 15, margin: "4px 0 0", fontWeight: 500 }}>
+                <p style={{ color: "var(--color-muted, #777)", fontSize: 15, margin: "4px 0 0", fontWeight: 500 }}>
                   {subjects.length > 0 ? `${subjects.length} subject${subjects.length !== 1 ? "s" : ""} enrolled` : "Welcome to StudyBuddy"}
                   {todaysSessions.length > 0 && ` · ${todaysSessions.length} session${todaysSessions.length !== 1 ? "s" : ""} today`}
                 </p>
               </div>
-              <button onClick={() => navigate("/dashboard")} style={{ padding: "10px 18px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid #333", color: "#FAFAFA", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, whiteSpace: "nowrap", transition: "border-color 0.2s, background-color 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.backgroundColor = "rgba(212,160,23,0.08)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.backgroundColor = "transparent"; }}>
+              <button onClick={() => navigate("/dashboard")} style={{ padding: "10px 18px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid var(--color-border, #333)", color: "var(--color-text, #FAFAFA)", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, whiteSpace: "nowrap", transition: "border-color 0.2s, background-color 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.backgroundColor = "rgba(212,160,23,0.08)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-border, #333)"; e.currentTarget.style.backgroundColor = "transparent"; }}>
                 <LayoutDashboard size={15} /> Dashboard
               </button>
             </div>
@@ -244,7 +244,7 @@ export default function HomePage() {
                   <span style={{ fontSize: 22 }}>{stat.icon}</span>
                   <div>
                     <div style={{ fontSize: 18, fontWeight: 700, color: stat.color, fontFamily: FONT }}>{stat.value}</div>
-                    <div style={{ fontSize: 11, color: "#888" }}>{stat.label}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-muted, #888)" }}>{stat.label}</div>
                   </div>
                 </div>
               ))}
@@ -257,22 +257,22 @@ export default function HomePage() {
               {/* Today's Mission */}
               <div style={{ ...card, padding: "40px 44px", textAlign: "center" }}>
                 <SectionLabel icon={Rocket} text="Today's Mission" />
-                <h2 style={{ fontFamily: FONT, fontSize: "clamp(22px, 3vw, 28px)", fontWeight: 700, color: "#FAFAFA", margin: "10px 0 6px" }}>What should you study today?</h2>
-                <p style={{ color: "#777", fontSize: 14, margin: "0 0 28px" }}>AI-powered study plan based on your subjects, goals & past sessions.</p>
+                <h2 style={{ fontFamily: FONT, fontSize: "clamp(22px, 3vw, 28px)", fontWeight: 700, color: "var(--color-text, #FAFAFA)", margin: "10px 0 6px" }}>What should you study today?</h2>
+                <p style={{ color: "var(--color-muted, #777)", fontSize: 14, margin: "0 0 28px" }}>AI-powered study plan based on your subjects, goals & past sessions.</p>
                 <button onClick={handleGeneratePlan} disabled={isGeneratingPlan} style={{ padding: "14px 36px", borderRadius: 12, backgroundColor: GOLD, color: "#0A0A0A", fontWeight: 700, fontSize: 15, fontFamily: FONT, border: "none", cursor: isGeneratingPlan ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: 10, opacity: isGeneratingPlan ? 0.7 : 1, transition: "opacity 0.2s" }}>
                   {isGeneratingPlan ? <><Loader2 size={18} className="animate-spin" /> Generating...</> : <><Rocket size={18} /> Generate Today's Task</>}
                 </button>
                 {planError && <div style={{ padding: "10px 16px", borderRadius: 8, backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#EF4444", fontSize: 13, marginTop: 16, maxWidth: 500, marginInline: "auto" }}><AlertCircle size={14} style={{ marginRight: 6, verticalAlign: -2 }} />{planError}</div>}
-                {subjects.length === 0 && <p style={{ color: "#555", fontSize: 13, marginTop: 14 }}>Add subjects in <span onClick={() => navigate("/courses")} style={{ color: GOLD, cursor: "pointer", textDecoration: "underline" }}>Courses</span> to get personalized plans.</p>}
+                {subjects.length === 0 && <p style={{ color: "var(--color-muted, #555)", fontSize: 13, marginTop: 14 }}>Add subjects in <span onClick={() => navigate("/courses")} style={{ color: GOLD, cursor: "pointer", textDecoration: "underline" }}>Courses</span> to get personalized plans.</p>}
               </div>
 
               {/* Learning Roadmap */}
               <div style={{ ...card, padding: "28px 32px" }}>
                 <SectionLabel icon={Signpost} text="Learning Roadmap" color="#F97316" />
-                <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: "#FAFAFA", margin: "6px 0 4px" }}>Generate a Full Learning Path</h3>
-                <p style={{ color: "#777", fontSize: 13, margin: "0 0 16px" }}>Enter a topic — get a visual roadmap with milestones, dependencies & resources.</p>
+                <h3 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: "var(--color-text, #FAFAFA)", margin: "6px 0 4px" }}>Generate a Full Learning Path</h3>
+                <p style={{ color: "var(--color-muted, #777)", fontSize: 13, margin: "0 0 16px" }}>Enter a topic — get a visual roadmap with milestones, dependencies & resources.</p>
                 <div style={{ display: "flex", gap: 12 }} className="plan-input-grid">
-                  <input type="text" placeholder='e.g., "Full Stack Web Development" or "Operating Systems"' value={topicPreference} onChange={(e) => setTopicPreference(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleGenerateRoadmap(); }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, backgroundColor: "#0A0A0A", border: "1px solid #282828", color: "#FAFAFA", fontSize: 14, outline: "none" }} />
+                  <input type="text" placeholder='e.g., "Full Stack Web Development" or "Operating Systems"' value={topicPreference} onChange={(e) => setTopicPreference(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleGenerateRoadmap(); }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, backgroundColor: "var(--color-input, #0A0A0A)", border: "1px solid var(--color-border, #282828)", color: "var(--color-text, #FAFAFA)", fontSize: 14, outline: "none" }} />
                   <button onClick={handleGenerateRoadmap} disabled={isGeneratingRoadmap || !topicPreference.trim()} style={{ padding: "12px 24px", borderRadius: 10, backgroundColor: "transparent", border: "1px solid #F97316", color: "#F97316", fontWeight: 700, fontSize: 14, cursor: isGeneratingRoadmap || !topicPreference.trim() ? "not-allowed" : "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8, opacity: isGeneratingRoadmap || !topicPreference.trim() ? 0.5 : 1 }}>
                     {isGeneratingRoadmap ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : <><Signpost size={16} /> Generate Roadmap</>}
                   </button>
@@ -415,17 +415,17 @@ export default function HomePage() {
             <div style={{ ...card, padding: "32px 36px" }}>
               <div style={{ marginBottom: 24 }}>
                 <SectionLabel icon={CalendarClock} text="Schedule" />
-                <h3 style={{ fontFamily: FONT, fontSize: 22, fontWeight: 700, color: "#FAFAFA", margin: "4px 0 0" }}>Assignment deadlines & exams at a glance</h3>
+                <h3 style={{ fontFamily: FONT, fontSize: 22, fontWeight: 700, color: "var(--color-text, #FAFAFA)", margin: "4px 0 0" }}>Assignment deadlines & exams at a glance</h3>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); } else setCalMonth((m) => m - 1); }} style={{ padding: "6px 14px", borderRadius: 8, backgroundColor: "#0D0D0D", border: "1px solid #333", color: "#aaa", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft size={14} /> Prev</button>
-                    <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 17, color: "#FAFAFA" }}>{monthNames[calMonth]} {calYear}</div>
-                    <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); } else setCalMonth((m) => m + 1); }} style={{ padding: "6px 14px", borderRadius: 8, backgroundColor: "#0D0D0D", border: "1px solid #333", color: "#aaa", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>Next <ChevronRight size={14} /></button>
+                    <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); } else setCalMonth((m) => m - 1); }} style={{ padding: "6px 14px", borderRadius: 8, backgroundColor: "var(--color-elevated, #0D0D0D)", border: "1px solid var(--color-border, #333)", color: "var(--color-muted, #aaa)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft size={14} /> Prev</button>
+                    <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 17, color: "var(--color-text, #FAFAFA)" }}>{monthNames[calMonth]} {calYear}</div>
+                    <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); } else setCalMonth((m) => m + 1); }} style={{ padding: "6px 14px", borderRadius: 8, backgroundColor: "var(--color-elevated, #0D0D0D)", border: "1px solid var(--color-border, #333)", color: "var(--color-muted, #aaa)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>Next <ChevronRight size={14} /></button>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
-                    {dayNames.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11, color: "#666", fontWeight: 700, textTransform: "uppercase", padding: "4px 0" }}>{d}</div>)}
+                    {dayNames.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11, color: "var(--color-muted, #666)", fontWeight: 700, textTransform: "uppercase", padding: "4px 0" }}>{d}</div>)}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
                     {calGrid.map((day, i) => {
@@ -436,7 +436,7 @@ export default function HomePage() {
                       const isSel = selectedCalDate === day;
                       return (
                         <div key={day} onClick={() => setSelectedCalDate(isSel ? null : day)} style={{ padding: "8px 4px", borderRadius: 10, textAlign: "center", cursor: "pointer", backgroundColor: isSel ? "rgba(212,160,23,0.15)" : isToday ? "rgba(59,130,246,0.1)" : "transparent", border: isSel ? `1px solid ${GOLD}` : isToday ? "1px solid #3B82F6" : "1px solid transparent", transition: "all 0.15s", minHeight: 52 }}>
-                          <div style={{ fontSize: 14, fontWeight: isToday || isSel ? 700 : 500, color: isToday ? "#3B82F6" : isSel ? GOLD : "#FAFAFA" }}>{day}</div>
+                          <div style={{ fontSize: 14, fontWeight: isToday || isSel ? 700 : 500, color: isToday ? "#3B82F6" : isSel ? GOLD : "var(--color-text, #FAFAFA)" }}>{day}</div>
                           {events.length > 0 && <div style={{ display: "flex", gap: 3, justifyContent: "center", marginTop: 4 }}>{events.slice(0, 3).map((e, ei) => <div key={ei} style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: e.color }} />)}</div>}
                         </div>
                       );
@@ -445,17 +445,17 @@ export default function HomePage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {selectedCalDate && (
-                    <div style={{ backgroundColor: "#0D0D0D", border: "1px solid #282828", borderRadius: 14, padding: 14 }}>
+                    <div style={{ backgroundColor: "var(--color-elevated, #0D0D0D)", border: "1px solid var(--color-border, #282828)", borderRadius: 14, padding: 14 }}>
                       <div style={{ fontSize: 12, color: GOLD, fontWeight: 700, marginBottom: 10 }}>{monthNames[calMonth]} {selectedCalDate}, {calYear}</div>
-                      {selectedEvents.length === 0 ? <div style={{ fontSize: 13, color: "#555" }}>No events</div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{selectedEvents.map((e, i) => <div key={i} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: "#111", borderLeft: `3px solid ${e.color}` }}><div style={{ fontSize: 11, color: e.color, fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>{e.type === "exam" ? "Exam" : "Assignment"}</div><div style={{ fontSize: 13, color: "#FAFAFA", fontWeight: 600 }}>{e.title}</div></div>)}</div>}
+                      {selectedEvents.length === 0 ? <div style={{ fontSize: 13, color: "var(--color-muted, #555)" }}>No events</div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{selectedEvents.map((e, i) => <div key={i} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: "var(--color-surface, #111)", borderLeft: `3px solid ${e.color}` }}><div style={{ fontSize: 11, color: e.color, fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>{e.type === "exam" ? "Exam" : "Assignment"}</div><div style={{ fontSize: 13, color: "var(--color-text, #FAFAFA)", fontWeight: 600 }}>{e.title}</div></div>)}</div>}
                     </div>
                   )}
-                  <div style={{ backgroundColor: "#0D0D0D", border: "1px solid #282828", borderRadius: 14, padding: 14, flex: 1, overflowY: "auto", maxHeight: 260 }}>
-                    <div style={{ fontSize: 11, color: "#888", fontWeight: 700, marginBottom: 10, textTransform: "uppercase" }}>Upcoming · 30 days</div>
-                    {upcomingEvents.length === 0 ? <div style={{ fontSize: 13, color: "#555" }}>Nothing coming up</div> : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{upcomingEvents.map((e, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, backgroundColor: "#111" }}><div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: e.type === "exam" ? "#8B5CF6" : e.priority === "High" ? "#EF4444" : e.priority === "Low" ? "#3B82F6" : GOLD }} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, color: "#FAFAFA", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div><div style={{ fontSize: 11, color: "#666" }}>{e.date}{e.subject ? " · " + e.subject : ""}</div></div><div style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, whiteSpace: "nowrap", backgroundColor: e.daysLeft <= 1 ? "rgba(239,68,68,0.12)" : e.daysLeft <= 3 ? "rgba(212,160,23,0.12)" : "rgba(16,185,129,0.12)", color: e.daysLeft <= 1 ? "#EF4444" : e.daysLeft <= 3 ? GOLD : "#10B981" }}>{e.daysLeft === 0 ? "Today" : e.daysLeft === 1 ? "Tomorrow" : e.daysLeft + "d"}</div></div>)}</div>}
+                  <div style={{ backgroundColor: "var(--color-elevated, #0D0D0D)", border: "1px solid var(--color-border, #282828)", borderRadius: 14, padding: 14, flex: 1, overflowY: "auto", maxHeight: 260 }}>
+                    <div style={{ fontSize: 11, color: "var(--color-muted, #888)", fontWeight: 700, marginBottom: 10, textTransform: "uppercase" }}>Upcoming · 30 days</div>
+                    {upcomingEvents.length === 0 ? <div style={{ fontSize: 13, color: "var(--color-muted, #555)" }}>Nothing coming up</div> : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{upcomingEvents.map((e, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, backgroundColor: "var(--color-surface, #111)" }}><div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: e.type === "exam" ? "#8B5CF6" : e.priority === "High" ? "#EF4444" : e.priority === "Low" ? "#3B82F6" : GOLD }} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, color: "var(--color-text, #FAFAFA)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div><div style={{ fontSize: 11, color: "var(--color-muted, #666)" }}>{e.date}{e.subject ? " · " + e.subject : ""}</div></div><div style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, whiteSpace: "nowrap", backgroundColor: e.daysLeft <= 1 ? "rgba(239,68,68,0.12)" : e.daysLeft <= 3 ? "rgba(212,160,23,0.12)" : "rgba(16,185,129,0.12)", color: e.daysLeft <= 1 ? "#EF4444" : e.daysLeft <= 3 ? GOLD : "#10B981" }}>{e.daysLeft === 0 ? "Today" : e.daysLeft === 1 ? "Tomorrow" : e.daysLeft + "d"}</div></div>)}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {[{ c: GOLD, l: "Assignment" }, { c: "#8B5CF6", l: "Exam" }, { c: "#10B981", l: "Done" }, { c: "#EF4444", l: "High" }].map((x) => <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888" }}><div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: x.c }} /> {x.l}</div>)}
+                    {[{ c: GOLD, l: "Assignment" }, { c: "#8B5CF6", l: "Exam" }, { c: "#10B981", l: "Done" }, { c: "#EF4444", l: "High" }].map((x) => <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--color-muted, #888)" }}><div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: x.c }} /> {x.l}</div>)}
                   </div>
                 </div>
               </div>

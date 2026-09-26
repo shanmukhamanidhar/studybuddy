@@ -169,22 +169,22 @@ function FloatingCard({ card, index }) {
           delay: card.delay * 2,
         }}
         style={{
-          backgroundColor: "#171717",
-          border: "1px solid #2B2B2B",
+          backgroundColor: "var(--color-card, #171717)",
+          border: "1px solid var(--color-border, #2B2B2B)",
           borderRadius: 14,
           padding: "14px 18px",
           minWidth: 170,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          boxShadow: "0 8px 32px var(--color-shadow, rgba(0,0,0,0.5))",
           cursor: "default",
           userSelect: "none",
         }}
-        whileHover={{ scale: 1.04, boxShadow: "0 12px 40px rgba(0,0,0,0.65)" }}
+        whileHover={{ scale: 1.04, boxShadow: "0 12px 40px var(--color-shadow, rgba(0,0,0,0.65))" }}
       >
         <div style={{ fontSize: 22, marginBottom: 8, lineHeight: 1 }}>{card.icon}</div>
-        <div style={{ color: "#FAFAFA", fontWeight: 600, fontSize: 13, letterSpacing: "-0.01em" }}>
+        <div style={{ color: "var(--color-text, #FAFAFA)", fontWeight: 600, fontSize: 13, letterSpacing: "-0.01em" }}>
           {card.title}
         </div>
-        <div style={{ color: "#A3A3A3", fontSize: 11, marginTop: 3 }}>{card.sub}</div>
+        <div style={{ color: "var(--color-muted, #A3A3A3)", fontSize: 11, marginTop: 3 }}>{card.sub}</div>
         <div
           style={{
             marginTop: 10,
@@ -255,13 +255,13 @@ export default function HeroSection() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              backgroundColor: "#171717",
-              border: "1px solid #2B2B2B",
+              backgroundColor: "var(--color-card, #171717)",
+              border: "1px solid var(--color-border, #2B2B2B)",
               borderRadius: 100,
               padding: "6px 16px",
               fontSize: 12,
               fontWeight: 500,
-              color: "#A3A3A3",
+              color: "var(--color-muted, #A3A3A3)",
               letterSpacing: "0.02em",
             }}
           >
@@ -288,13 +288,13 @@ export default function HeroSection() {
               fontWeight: 800,
               lineHeight: 1.08,
               letterSpacing: "-0.03em",
-              color: "#FAFAFA",
+              color: "var(--color-text, #FAFAFA)",
               margin: 0,
             }}
           >
             Organize your semester.
             <br />
-            <span style={{ position: "relative", display: "inline-block", color: "#FAFAFA" }}>
+            <span style={{ position: "relative", display: "inline-block", color: "var(--color-text, #FAFAFA)" }}>
               Learn by doing.
               <HandwrittenUnderline />
             </span>
@@ -307,7 +307,7 @@ export default function HeroSection() {
           style={{
             fontSize: "clamp(15px, 2vw, 17px)",
             lineHeight: 1.7,
-            color: "#A3A3A3",
+            color: "var(--color-muted, #A3A3A3)",
             maxWidth: 480,
             margin: "0 auto 40px",
           }}

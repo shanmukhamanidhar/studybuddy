@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 export default function Footer() {
   const linkStyle = {
-    color: "#A3A3A3",
+    color: "var(--color-muted, #A3A3A3)",
     fontSize: 13,
     fontWeight: 500,
     textDecoration: "none",
@@ -11,16 +11,17 @@ export default function Footer() {
   };
 
   const hover = {
-    onMouseEnter: (e) => (e.currentTarget.style.color = "#FAFAFA"),
-    onMouseLeave: (e) => (e.currentTarget.style.color = "#A3A3A3"),
+    onMouseEnter: (e) => (e.currentTarget.style.color = "var(--color-text, #FAFAFA)"),
+    onMouseLeave: (e) => (e.currentTarget.style.color = "var(--color-muted, #A3A3A3)"),
   };
 
   return (
     <footer
       style={{
-        borderTop: "1px solid #2B2B2B",
-        backgroundColor: "#0A0A0A",
+        borderTop: "1px solid var(--color-border, #2B2B2B)",
+        backgroundColor: "var(--color-bg, #0A0A0A)",
         padding: "36px 24px",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
       <div
@@ -52,7 +53,7 @@ export default function Footer() {
               <path d="M6 13V9h4v4" stroke="#0A0A0A" strokeWidth="1.6" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span style={{ color: "#FAFAFA", fontWeight: 600, fontSize: 13, letterSpacing: "-0.01em" }}>StudyBuddy</span>
+          <span style={{ color: "var(--color-text, #FAFAFA)", fontWeight: 600, fontSize: 13, letterSpacing: "-0.01em" }}>StudyBuddy</span>
         </Link>
 
         {/* Links */}
@@ -75,7 +76,7 @@ export default function Footer() {
           </a>
         </div>
 
-        <p style={{ color: "#A3A3A3", fontSize: 12, margin: 0 }}>
+        <p style={{ color: "var(--color-muted, #A3A3A3)", fontSize: 12, margin: 0 }}>
           © {new Date().getFullYear()} StudyBuddy
         </p>
       </div>
