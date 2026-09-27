@@ -53,10 +53,23 @@ export default function LoginPage() {
       await loginWithEmail(form.email, form.password);
     } catch (err) {
       console.error("Login failed:", err);
-      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      const msg = err?.message || "";
+      const isUnconfirmed =
+        err?.code === "auth/email-not-confirmed" ||
+        msg.toLowerCase().includes("email not confirmed");
+
+      if (isUnconfirmed) {
+        setError(
+          "Email not confirmed. Please check your inbox and verify your email, or confirm your user in the Supabase Auth dashboard."
+        );
+      } else if (
+        err?.code === "auth/invalid-credential" ||
+        err?.code === "auth/user-not-found" ||
+        err?.code === "auth/wrong-password"
+      ) {
         setError("Invalid email or password.");
       } else {
-        setError("Failed to sign in. Please check your credentials.");
+        setError(msg || "Failed to sign in. Please check your credentials.");
       }
     } finally {
       setLoading(false);
@@ -70,7 +83,7 @@ export default function LoginPage() {
       await loginWithGoogle();
     } catch (err) {
       console.error("Google sign-in error:", err);
-      setError("Google sign-in was cancelled or failed.");
+      setError(err?.message || "Google sign-in was cancelled or failed.");
     } finally {
       setLoading(false);
     }

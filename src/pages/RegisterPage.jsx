@@ -66,6 +66,7 @@ function PasswordField({ id, label, name, value, onChange, placeholder }) {
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const { registerWithEmail, loginWithGoogle } = useAuth();
@@ -94,8 +95,12 @@ export default function RegisterPage() {
 
     try {
       setError("");
+      setSuccess("");
       setLoading(true);
-      await registerWithEmail(form.email, form.password, form.name);
+      const res = await registerWithEmail(form.email, form.password, form.name);
+      if (res?.user && !res?.session) {
+        setSuccess("Account created! Please check your email inbox to confirm your account before logging in.");
+      }
     } catch (err) {
       console.error("Registration error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -103,7 +108,7 @@ export default function RegisterPage() {
       } else if (err.code === "auth/weak-password") {
         setError("Password is too weak. Please use a stronger password.");
       } else {
-        setError("Failed to create an account. Please try again.");
+        setError(err?.message || "Failed to create an account. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -113,11 +118,12 @@ export default function RegisterPage() {
   const handleGoogleSignIn = async () => {
     try {
       setError("");
+      setSuccess("");
       setLoading(true);
       await loginWithGoogle();
     } catch (err) {
       console.error("Google sign-in error:", err);
-      setError("Google sign-in was cancelled or failed.");
+      setError(err?.message || "Google sign-in was cancelled or failed.");
     } finally {
       setLoading(false);
     }
@@ -177,6 +183,24 @@ export default function RegisterPage() {
               }}
             >
               {error}
+            </div>
+          )}
+
+          {/* Success Banner */}
+          {success && (
+            <div
+              style={{
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                color: "#10B981",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 13,
+                marginBottom: 20,
+                textAlign: "center",
+              }}
+            >
+              {success}
             </div>
           )}
 

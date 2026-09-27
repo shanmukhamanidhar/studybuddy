@@ -90,10 +90,18 @@ export function AuthProvider({ children }) {
     });
 
     if (error) {
-      const customError = new Error(error.message);
+      const customError = new Error(error.message || "Failed to sign in");
+      customError.code = error.code || "auth/unknown";
+      customError.status = error.status;
+      const msgLower = (error.message || "").toLowerCase();
       if (
-        error.message.toLowerCase().includes("invalid login credentials") ||
-        error.message.toLowerCase().includes("invalid grant")
+        msgLower.includes("email not confirmed") ||
+        error.code === "email_not_confirmed"
+      ) {
+        customError.code = "auth/email-not-confirmed";
+      } else if (
+        msgLower.includes("invalid login credentials") ||
+        msgLower.includes("invalid grant")
       ) {
         customError.code = "auth/invalid-credential";
       }
@@ -126,21 +134,24 @@ export function AuthProvider({ children }) {
     });
 
     if (error) {
-      const customError = new Error(error.message);
+      const customError = new Error(error.message || "Failed to create account");
+      customError.code = error.code || "auth/unknown";
+      customError.status = error.status;
+      const msgLower = (error.message || "").toLowerCase();
       if (
-        error.message.toLowerCase().includes("already registered") ||
-        error.message.toLowerCase().includes("already exists") ||
-        error.message.toLowerCase().includes("user already registered")
+        msgLower.includes("already registered") ||
+        msgLower.includes("already exists") ||
+        msgLower.includes("user already registered")
       ) {
         customError.code = "auth/email-already-in-use";
-      } else if (error.message.toLowerCase().includes("weak password")) {
+      } else if (msgLower.includes("weak password")) {
         customError.code = "auth/weak-password";
       }
       throw customError;
     }
 
     const formattedUser = formatAuthUser(data.user);
-    if (formattedUser) {
+    if (formattedUser && data.session) {
       setCurrentUser(formattedUser);
       await syncUserDataToFirestore(formattedUser, { displayName });
     }

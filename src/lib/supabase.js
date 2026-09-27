@@ -5,18 +5,22 @@ export const REQUIRED_SUPABASE_ENV_VARS = [
   "VITE_SUPABASE_ANON_KEY",
 ];
 
-const getEnvVar = (key) => {
-  const fallbackKey = key.replace(/^VITE_/, "");
-  const value = import.meta.env[key] ?? import.meta.env[fallbackKey];
-  return typeof value === "string" ? value.trim() : "";
-};
+const supabaseUrl = (
+  import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.SUPABASE_URL ||
+  ""
+).trim();
 
-const supabaseUrl = getEnvVar("VITE_SUPABASE_URL");
-const supabaseAnonKey = getEnvVar("VITE_SUPABASE_ANON_KEY");
+const supabaseAnonKey = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.SUPABASE_ANON_KEY ||
+  ""
+).trim();
 
-export const missingSupabaseEnvVars = REQUIRED_SUPABASE_ENV_VARS.filter(
-  (key) => !getEnvVar(key)
-);
+export const missingSupabaseEnvVars = [
+  !supabaseUrl ? "VITE_SUPABASE_URL" : null,
+  !supabaseAnonKey ? "VITE_SUPABASE_ANON_KEY" : null,
+].filter(Boolean);
 
 export const isSupabaseConfigured = missingSupabaseEnvVars.length === 0;
 
