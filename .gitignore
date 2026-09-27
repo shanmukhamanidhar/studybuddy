@@ -22,4 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 .env
+.env.local
+.env.*.local
 *.sw?

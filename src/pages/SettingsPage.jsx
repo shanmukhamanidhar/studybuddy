@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { upsertProfile } from "../lib/supabaseDb";
 import { Sun, Moon, Check } from "lucide-react";
 
 export default function SettingsPage() {
@@ -21,12 +20,11 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!currentUser) return;
     try {
-      const userRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userRef, {
+      await upsertProfile(currentUser.uid, {
         "aboutYou.preferredName": preferredName,
         "goals.targetSGPA": targetSGPA,
         "goals.studyHours": studyHours,
-        updatedAt: serverTimestamp(),
+        displayName: preferredName,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

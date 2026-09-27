@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { assignmentsDb, examsDb } from "../lib/supabaseDb";
 import { PageHeaderSkeleton, ListItemSkeleton } from "../components/studyspace/SkeletonLoader";
 
 export default function CalendarPage() {
@@ -15,14 +14,14 @@ export default function CalendarPage() {
     if (!currentUser) return;
     let loaded = 0;
     const done = () => { loaded++; if (loaded >= 2) setLoading(false); };
-    const unsubA = onSnapshot(collection(db, "users", currentUser.uid, "assignments"), (snap) => {
-      setAssignments(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsubA = assignmentsDb.subscribe(currentUser.uid, (items) => {
+      setAssignments(items);
       done();
-    }, () => done());
-    const unsubE = onSnapshot(collection(db, "users", currentUser.uid, "exams"), (snap) => {
-      setExams(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    const unsubE = examsDb.subscribe(currentUser.uid, (items) => {
+      setExams(items);
       done();
-    }, () => done());
+    });
     return () => { unsubA(); unsubE(); };
   }, [currentUser]);
 

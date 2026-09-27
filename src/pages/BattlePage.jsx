@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
 import { useGamification } from "../hooks/useGamification";
-import { db } from "../firebase";
 import {
   listenToRoom,
   toggleReady,
@@ -12,7 +11,7 @@ import {
   submitAnswer,
   finishBattle,
 } from "../utils/rooms";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { practiceHistoryDb } from "../lib/supabaseDb";
 
 const GOLD = "#D4A017";
 
@@ -206,7 +205,7 @@ export default function BattlePage() {
         // Save to each participant's practice history
         for (const r of result.results) {
           try {
-            await addDoc(collection(db, "users", r.uid, "practiceHistory"), {
+            await practiceHistoryDb.add(r.uid, {
               type: "quiz",
               subjectName: "Arena Battle",
               topic: room.config.topics,
@@ -222,7 +221,6 @@ export default function BattlePage() {
                 userAnswer: r.details?.[i]?.userAnswer ?? null,
               })),
               arenaCode: code,
-              createdAt: serverTimestamp(),
             });
           } catch (e) {
             console.error("History save failed for", r.uid, e);

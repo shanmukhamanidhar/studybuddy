@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import { db } from "../firebase";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { studySessionsDb } from "../lib/supabaseDb";
 
 export function useStudySessions(uid) {
   const [sessions, setSessions] = useState([]);
@@ -20,13 +12,8 @@ export function useStudySessions(uid) {
       return;
     }
 
-    const q = query(
-      collection(db, "users", uid, "studySessions"),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsub = onSnapshot(q, (snap) => {
-      setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsub = studySessionsDb.subscribe(uid, (items) => {
+      setSessions(items);
       setLoading(false);
     });
 
@@ -35,10 +22,7 @@ export function useStudySessions(uid) {
 
   const saveSession = async (data) => {
     if (!uid) return;
-    return addDoc(collection(db, "users", uid, "studySessions"), {
-      ...data,
-      createdAt: serverTimestamp(),
-    });
+    return await studySessionsDb.add(uid, data);
   };
 
   return { sessions, loading, saveSession };

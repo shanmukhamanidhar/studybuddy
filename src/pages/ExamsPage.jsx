@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, orderBy } from "firebase/firestore";
+import { examsDb } from "../lib/supabaseDb";
 import { useSubjects } from "../hooks/useSubjects";
 import { ExamCardSkeleton } from "../components/studyspace/SkeletonLoader";
 
@@ -22,9 +21,8 @@ export default function ExamsPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(collection(db, "users", currentUser.uid, "exams"), orderBy("date", "asc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setExams(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    const unsub = examsDb.subscribe(currentUser.uid, (items) => {
+      setExams(items.map((doc) => ({ id: doc.id, examName: doc.examName || doc.title, ...doc })));
       setLoading(false);
     });
     return () => unsub();
@@ -34,13 +32,13 @@ export default function ExamsPage() {
     e.preventDefault();
     if (!examName.trim() || !currentUser) return;
     const selectedSub = subjects.find((s) => s.id === subjectId);
-    await addDoc(collection(db, "users", currentUser.uid, "exams"), {
+    await examsDb.add(currentUser.uid, {
+      title: examName.trim(),
       examName: examName.trim(),
       subjectId: subjectId || "general",
       subjectName: selectedSub?.name || "General Exam",
       date: date || new Date().toISOString().split("T")[0],
       coverage: coverage.trim(),
-      createdAt: serverTimestamp(),
     });
     setExamName("");
     setCoverage("");
@@ -48,7 +46,7 @@ export default function ExamsPage() {
   };
 
   const handleDelete = async (id) => {
-    await deleteDoc(doc(db, "users", currentUser.uid, "exams", id));
+    await examsDb.delete(id);
   };
 
   return (

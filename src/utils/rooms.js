@@ -1,9 +1,4 @@
-import { db } from "../firebase";
-import {
-  doc, setDoc, getDoc, updateDoc, onSnapshot,
-  collection, query, where, getDocs, deleteDoc,
-  serverTimestamp, arrayUnion, increment,
-} from "firebase/firestore";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -13,11 +8,20 @@ function generateRoomCode() {
 }
 
 export async function createRoom(hostUid, hostName, config) {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
   let code = generateRoomCode();
   let attempts = 0;
   while (attempts < 10) {
-    const existing = await getDoc(doc(db, "rooms", code));
-    if (!existing.exists()) break;
+    const { data: existing } = await supabase
+      .from("rooms")
+      .select("code")
+      .eq("code", code)
+      .maybeSingle();
+
+    if (!existing) break;
     code = generateRoomCode();
     attempts++;
   }
@@ -25,101 +29,147 @@ export async function createRoom(hostUid, hostName, config) {
   const roomData = {
     code,
     host: hostUid,
-    createdAt: serverTimestamp(),
     config: {
       topics: config.topics || "",
-      questionCount: parseInt(config.questionCount) || 5,
-      timePerQuestion: parseInt(config.timePerQuestion) || 30,
+      questionCount: parseInt(config.questionCount, 10) || 5,
+      timePerQuestion: parseInt(config.timePerQuestion, 10) || 30,
       difficulty: config.difficulty || "Medium",
     },
     status: "lobby",
     participants: [{ uid: hostUid, name: hostName, ready: false }],
     questions: [],
-    startedAt: null,
+    created_at: new Date().toISOString(),
+    started_at: null,
   };
 
-  await setDoc(doc(db, "rooms", code), roomData);
+  const { error } = await supabase.from("rooms").insert(roomData);
+  if (error) throw error;
   return code;
 }
 
 export async function joinRoom(code, uid, name) {
-  const roomRef = doc(db, "rooms", code.toUpperCase());
-  const roomSnap = await getDoc(roomRef);
-  if (!roomSnap.exists()) throw new Error("Room not found. Check the code and try again.");
+  if (!isSupabaseConfigured || !supabase) throw new Error("Supabase not configured.");
+  const roomCode = code.toUpperCase();
 
-  const room = roomSnap.data();
+  const { data: room, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("code", roomCode)
+    .maybeSingle();
+
+  if (error || !room) throw new Error("Room not found. Check the code and try again.");
   if (room.status !== "lobby") throw new Error("Room already in session or finished.");
-  if (room.participants.length >= 10) throw new Error("Room is full (max 10 players).");
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  if (participants.length >= 10) throw new Error("Room is full (max 10 players).");
 
-  const alreadyJoined = room.participants.find((p) => p.uid === uid);
+  const alreadyJoined = participants.find((p) => p.uid === uid);
   if (!alreadyJoined) {
-    await updateDoc(roomRef, {
-      participants: [...room.participants, { uid, name, ready: false }],
-    });
+    const updated = [...participants, { uid, name, ready: false }];
+    const { error: updateErr } = await supabase
+      .from("rooms")
+      .update({ participants: updated })
+      .eq("code", roomCode);
+    if (updateErr) throw updateErr;
+    room.participants = updated;
   }
   return room;
 }
 
 export async function toggleReady(code, uid) {
-  const roomRef = doc(db, "rooms", code);
-  const roomSnap = await getDoc(roomRef);
-  if (!roomSnap.exists()) return;
+  if (!isSupabaseConfigured || !supabase) return;
+  const { data: room } = await supabase
+    .from("rooms")
+    .select("participants")
+    .eq("code", code)
+    .maybeSingle();
 
-  const room = roomSnap.data();
-  const updated = room.participants.map((p) =>
+  if (!room) return;
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const updated = participants.map((p) =>
     p.uid === uid ? { ...p, ready: !p.ready } : p
   );
-  await updateDoc(roomRef, { participants: updated });
+
+  await supabase.from("rooms").update({ participants: updated }).eq("code", code);
 }
 
 export async function leaveRoom(code, uid) {
-  const roomRef = doc(db, "rooms", code);
-  const roomSnap = await getDoc(roomRef);
-  if (!roomSnap.exists()) return;
+  if (!isSupabaseConfigured || !supabase) return;
+  const { data: room } = await supabase
+    .from("rooms")
+    .select("participants")
+    .eq("code", code)
+    .maybeSingle();
 
-  const room = roomSnap.data();
-  const updated = room.participants.filter((p) => p.uid !== uid);
-  if (updated.length === 0) {
-    await deleteDoc(roomRef);
+  if (!room) return;
+  const participants = (room.participants || []).filter((p) => p.uid !== uid);
+  if (participants.length === 0) {
+    await supabase.from("rooms").delete().eq("code", code);
     return;
   }
-  await updateDoc(roomRef, { participants: updated });
+  await supabase.from("rooms").update({ participants }).eq("code", code);
 }
 
 export async function startBattle(code, questions) {
-  const roomRef = doc(db, "rooms", code);
-  await updateDoc(roomRef, {
+  if (!isSupabaseConfigured || !supabase) return;
+  await supabase.from("rooms").update({
     status: "active",
     questions,
-    startedAt: serverTimestamp(),
-  });
+    started_at: new Date().toISOString(),
+  }).eq("code", code);
 }
 
 export async function submitAnswer(code, uid, questionIndex, answerIndex) {
-  const pRef = doc(db, "rooms", code, "answers", uid);
-  await setDoc(pRef, {
-    uid,
-    [`q${questionIndex}`]: answerIndex,
-    updatedAt: serverTimestamp(),
-  }, { merge: true });
+  if (!isSupabaseConfigured || !supabase) return;
+  // Fetch existing answers row for user
+  const { data: existing } = await supabase
+    .from("room_answers")
+    .select("answers")
+    .eq("room_code", code)
+    .eq("user_id", uid)
+    .maybeSingle();
+
+  const answers = existing?.answers || {};
+  answers[`q${questionIndex}`] = answerIndex;
+
+  await supabase.from("room_answers").upsert(
+    {
+      room_code: code,
+      user_id: uid,
+      answers,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "room_code,user_id" }
+  );
 }
 
 export async function finishBattle(code) {
-  const roomRef = doc(db, "rooms", code);
-  const roomSnap = await getDoc(roomRef);
-  if (!roomSnap.exists()) return null;
+  if (!isSupabaseConfigured || !supabase) return null;
+  const { data: room } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("code", code)
+    .maybeSingle();
 
-  const room = roomSnap.data();
+  if (!room) return null;
 
-  const answersSnap = await getDocs(collection(db, "rooms", code, "answers"));
+  const { data: answersRows } = await supabase
+    .from("room_answers")
+    .select("user_id, answers")
+    .eq("room_code", code);
+
   const allAnswers = {};
-  answersSnap.forEach((d) => { allAnswers[d.id] = d.data(); });
+  (answersRows || []).forEach((row) => {
+    allAnswers[row.user_id] = row.answers || {};
+  });
 
-  const results = room.participants.map((p) => {
+  const participants = Array.isArray(room.participants) ? room.participants : [];
+  const questions = Array.isArray(room.questions) ? room.questions : [];
+
+  const results = participants.map((p) => {
     const ans = allAnswers[p.uid] || {};
     let score = 0;
-    let total = room.questions.length;
-    const details = room.questions.map((q, i) => {
+    const total = questions.length;
+    const details = questions.map((q, i) => {
       const userAns = ans["q" + i];
       const correct = userAns === q.correctIndex;
       if (correct) score++;
@@ -130,28 +180,101 @@ export async function finishBattle(code) {
 
   results.sort((a, b) => b.score - a.score);
 
-  await updateDoc(roomRef, {
-    status: "finished",
-    results,
-  });
+  await supabase
+    .from("rooms")
+    .update({ status: "finished", results })
+    .eq("code", code);
 
   return { room, results };
 }
 
 export function listenToRoom(code, callback) {
-  return onSnapshot(doc(db, "rooms", code), (snap) => {
-    if (snap.exists()) {
-      callback({ id: snap.id, ...snap.data() });
-    } else {
-      callback(null);
-    }
-  });
+  if (!isSupabaseConfigured || !supabase) {
+    callback(null);
+    return () => {};
+  }
+
+  let active = true;
+
+  const fetchRoom = async () => {
+    const { data } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("code", code)
+      .maybeSingle();
+    if (active) callback(data ? { id: data.code, ...data } : null);
+  };
+
+  fetchRoom();
+
+  const channel = supabase
+    .channel(`room:${code}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "rooms",
+        filter: `code=eq.${code}`,
+      },
+      (payload) => {
+        if (!active) return;
+        if (payload.eventType === "DELETE") {
+          callback(null);
+        } else {
+          callback({ id: payload.new.code, ...payload.new });
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
+  };
 }
 
 export function listenToAnswers(code, callback) {
-  return onSnapshot(collection(db, "rooms", code, "answers"), (snap) => {
-    const answers = {};
-    snap.forEach((d) => { answers[d.id] = d.data(); });
-    callback(answers);
-  });
+  if (!isSupabaseConfigured || !supabase) {
+    callback({});
+    return () => {};
+  }
+
+  let active = true;
+
+  const fetchAnswers = async () => {
+    const { data } = await supabase
+      .from("room_answers")
+      .select("user_id, answers")
+      .eq("room_code", code);
+
+    const answersMap = {};
+    (data || []).forEach((d) => {
+      answersMap[d.user_id] = d.answers || {};
+    });
+    if (active) callback(answersMap);
+  };
+
+  fetchAnswers();
+
+  const channel = supabase
+    .channel(`room_answers:${code}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "room_answers",
+        filter: `room_code=eq.${code}`,
+      },
+      () => {
+        if (active) fetchAnswers();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    active = false;
+    supabase.removeChannel(channel);
+  };
 }

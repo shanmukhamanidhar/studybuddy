@@ -3,15 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SidebarLayout from "../components/layout/SidebarLayout";
 import { useAuth } from "../context/AuthContext";
 import RoadmapVisual from "../components/RoadmapVisual";
-import { db } from "../firebase";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
+import { practiceHistoryDb, studySessionsDb, roadmapsDb } from "../lib/supabaseDb";
 import { HistoryCardSkeleton, TabBarSkeleton } from "../components/studyspace/SkeletonLoader";
 
 export default function HistoryPage() {
@@ -34,41 +26,20 @@ export default function HistoryPage() {
       if (loaded === 3) setLoading(false);
     };
 
-    const unsubHistory = onSnapshot(
-      query(
-        collection(db, "users", currentUser.uid, "practiceHistory"),
-        orderBy("createdAt", "desc")
-      ),
-      (snap) => {
-        setHistory(snap.docs.map((d) => ({ id: d.id, ...d.data(), _collection: "practiceHistory" })));
-        checkDone();
-      },
-      () => checkDone()
-    );
+    const unsubHistory = practiceHistoryDb.subscribe(currentUser.uid, (items) => {
+      setHistory(items.map((d) => ({ ...d, _collection: "practiceHistory" })));
+      checkDone();
+    });
 
-    const unsubSessions = onSnapshot(
-      query(
-        collection(db, "users", currentUser.uid, "studySessions"),
-        orderBy("createdAt", "desc")
-      ),
-      (snap) => {
-        setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data(), _collection: "studySessions" })));
-        checkDone();
-      },
-      () => checkDone()
-    );
+    const unsubSessions = studySessionsDb.subscribe(currentUser.uid, (items) => {
+      setSessions(items.map((d) => ({ ...d, _collection: "studySessions" })));
+      checkDone();
+    });
 
-    const unsubRoadmaps = onSnapshot(
-      query(
-        collection(db, "users", currentUser.uid, "roadmaps"),
-        orderBy("createdAt", "desc")
-      ),
-      (snap) => {
-        setRoadmaps(snap.docs.map((d) => ({ id: d.id, ...d.data(), _collection: "roadmaps" })));
-        checkDone();
-      },
-      () => checkDone()
-    );
+    const unsubRoadmaps = roadmapsDb.subscribe(currentUser.uid, (items) => {
+      setRoadmaps(items.map((d) => ({ ...d, _collection: "roadmaps" })));
+      checkDone();
+    });
 
     return () => {
       unsubHistory();
@@ -78,8 +49,8 @@ export default function HistoryPage() {
   }, [currentUser?.uid]);
 
   const allItems = [...history, ...sessions, ...roadmaps].sort((a, b) => {
-    const ta = a.createdAt?.toMillis?.() || 0;
-    const tb = b.createdAt?.toMillis?.() || 0;
+    const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+    const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
     return tb - ta;
   });
 
@@ -94,15 +65,19 @@ export default function HistoryPage() {
     if (!currentUser?.uid) return;
     try {
       const col = item._collection || "practiceHistory";
-      await deleteDoc(doc(db, "users", currentUser.uid, col, item.id));
+      if (col === "practiceHistory") await practiceHistoryDb.delete(item.id);
+      else if (col === "studySessions") await studySessionsDb.delete(item.id);
+      else if (col === "roadmaps") await roadmapsDb.delete(item.id);
     } catch (err) {
       console.error("Failed to delete history item:", err);
     }
   };
 
   const formatDate = (ts) => {
-    if (!ts?.toDate) return "Unknown date";
-    return ts.toDate().toLocaleDateString("en-US", {
+    if (!ts) return "Unknown date";
+    const date = ts?.toDate ? ts.toDate() : new Date(ts);
+    if (isNaN(date.getTime())) return "Unknown date";
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",

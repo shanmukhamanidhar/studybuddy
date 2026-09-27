@@ -12,8 +12,7 @@ import RoadmapVisual from "../components/RoadmapVisual";
 import Logo from "../components/Logo";
 import { generateDailyPlan } from "../utils/dailyPlan";
 import { generateRoadmap } from "../utils/roadmap";
-import { db } from "../firebase";
-import { collection, addDoc, serverTimestamp, query, onSnapshot, orderBy } from "firebase/firestore";
+import { assignmentsDb, examsDb, roadmapsDb } from "../lib/supabaseDb";
 import {
   Rocket, Backpack, Crosshair, Flame, Signpost,
   RotateCcw, Save, CalendarClock, ChevronLeft, ChevronRight,
@@ -110,8 +109,8 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!currentUser?.uid) return;
-    const unsubA = onSnapshot(query(collection(db, "users", currentUser.uid, "assignments"), orderBy("createdAt", "desc")), (snap) => setAssignments(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => {});
-    const unsubE = onSnapshot(query(collection(db, "users", currentUser.uid, "exams"), orderBy("date", "asc")), (snap) => setExams(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => {});
+    const unsubA = assignmentsDb.subscribe(currentUser.uid, (items) => setAssignments(items));
+    const unsubE = examsDb.subscribe(currentUser.uid, (items) => setExams(items));
     return () => { unsubA(); unsubE(); };
   }, [currentUser?.uid]);
 
@@ -171,7 +170,7 @@ export default function HomePage() {
   };
   const handleSuggestQuiz = () => { setShowReflection(false); navigate("/practice", { state: { topic: completedSessionData?.subjectName || "" } }); setCompletedSessionData(null); };
   const handleGenerateRoadmap = async () => { setIsGeneratingRoadmap(true); setRoadmapError(null); setRoadmapSaved(false); try { const roadmap = await generateRoadmap(userProfile, subjects, sessions, topicPreference); setActiveRoadmap(roadmap); } catch (err) { setRoadmapError(err.message || "Failed to generate roadmap"); } finally { setIsGeneratingRoadmap(false); } };
-  const handleSaveRoadmap = async () => { if (!activeRoadmap || !currentUser?.uid) return; try { await addDoc(collection(db, "users", currentUser.uid, "roadmaps"), { ...activeRoadmap, createdAt: serverTimestamp() }); setRoadmapSaved(true); } catch (err) { console.error(err); } };
+  const handleSaveRoadmap = async () => { if (!activeRoadmap || !currentUser?.uid) return; try { await roadmapsDb.add(currentUser.uid, activeRoadmap); setRoadmapSaved(true); } catch (err) { console.error(err); } };
   const handleToggleRoadmapNode = (nodeId, newStatus) => { setActiveRoadmap((prev) => { if (!prev) return prev; return { ...prev, nodes: prev.nodes.map((n) => n.id === nodeId ? { ...n, status: newStatus } : n) }; }); };
 
   const SectionLabel = ({ icon: Icon, text, color = GOLD }) => (

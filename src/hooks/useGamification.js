@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { subscribeProfile } from "../lib/supabaseDb";
 import {
   DEFAULT_GAMIFICATION,
   calculateLevel,
@@ -28,22 +27,14 @@ export function useGamification(uid) {
       setLoading(false);
       return;
     }
-    const unsub = onSnapshot(
-      doc(db, "users", uid),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          setGamification({ ...DEFAULT_GAMIFICATION, ...data.gamification });
-        } else {
-          setGamification(DEFAULT_GAMIFICATION);
-        }
-        setLoading(false);
-      },
-      () => {
+    const unsub = subscribeProfile(uid, (profile) => {
+      if (profile) {
+        setGamification({ ...DEFAULT_GAMIFICATION, ...profile.gamification });
+      } else {
         setGamification(DEFAULT_GAMIFICATION);
-        setLoading(false);
       }
-    );
+      setLoading(false);
+    });
     return () => unsub();
   }, [uid]);
 

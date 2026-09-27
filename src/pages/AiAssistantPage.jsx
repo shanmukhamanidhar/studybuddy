@@ -3,8 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
 import { useSubjects } from "../hooks/useSubjects";
 import { generateAcademicAiResponse } from "../utils/gemini";
-import { db } from "../firebase";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { assignmentsDb, examsDb } from "../lib/supabaseDb";
 
 export default function AiAssistantPage() {
   const { currentUser, userProfile } = useAuth();
@@ -25,11 +24,11 @@ export default function AiAssistantPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const unsubA = onSnapshot(collection(db, "users", currentUser.uid, "assignments"), (snap) => {
-      setAssignments(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsubA = assignmentsDb.subscribe(currentUser.uid, (items) => {
+      setAssignments(items);
     });
-    const unsubE = onSnapshot(collection(db, "users", currentUser.uid, "exams"), (snap) => {
-      setExams(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsubE = examsDb.subscribe(currentUser.uid, (items) => {
+      setExams(items);
     });
     return () => {
       unsubA();

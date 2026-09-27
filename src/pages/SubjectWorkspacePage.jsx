@@ -2,11 +2,15 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
 import {
-  doc, getDoc, collection, query, onSnapshot, orderBy, where,
-  addDoc, deleteDoc, serverTimestamp,
-} from "firebase/firestore";
+  getProfile,
+  practiceHistoryDb,
+  studySessionsDb,
+  examsDb,
+  assignmentsDb,
+  notesDb,
+  resourcesDb,
+} from "../lib/supabaseDb";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
@@ -155,9 +159,8 @@ export default function SubjectWorkspacePage() {
       if (!currentUser || !subjectId) return;
       try {
         setLoading(true);
-        const snap = await getDoc(doc(db, "users", currentUser.uid));
-        if (snap.exists()) {
-          const data = snap.data();
+        const data = await getProfile(currentUser.uid);
+        if (data) {
           const subjectsArr = Array.isArray(data.subjects) ? data.subjects : [];
           setSubject(subjectsArr.find((s) => s.id === subjectId || String(s.id) === String(subjectId)) || null);
           setUserDoc(data);
@@ -174,41 +177,23 @@ export default function SubjectWorkspacePage() {
   // Real-time listeners
   useEffect(() => {
     if (!currentUser || !subjectId) return;
-    const unsubP = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "practiceHistory"), orderBy("createdAt", "desc")),
-      (snap) => setPracticeHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.subjectId === subjectId || String(p.subjectId) === String(subjectId))),
-      () => {}
-    );
-    const unsubS = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "studySessions"), orderBy("createdAt", "desc")),
-      (snap) => setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((s) => s.subjectId === subjectId || String(s.subjectId) === String(subjectId))),
-      () => {}
-    );
-    const unsubE = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "exams"), orderBy("date", "asc")),
-      (snap) => setScheduledExams(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((e) => e.subjectId === subjectId || String(e.subjectId) === String(subjectId))),
-      () => {}
-    );
+    const unsubP = practiceHistoryDb.subscribe(currentUser.uid, (items) => {
+      setPracticeHistory(items.filter((p) => p.subjectId === subjectId || String(p.subjectId) === String(subjectId)));
+    });
+    const unsubS = studySessionsDb.subscribe(currentUser.uid, (items) => {
+      setSessions(items.filter((s) => s.subjectId === subjectId || String(s.subjectId) === String(subjectId)));
+    });
+    const unsubE = examsDb.subscribe(currentUser.uid, (items) => {
+      setScheduledExams(items.filter((e) => e.subjectId === subjectId || String(e.subjectId) === String(subjectId)));
+    });
     return () => { unsubP(); unsubS(); unsubE(); };
   }, [currentUser, subjectId]);
 
   useEffect(() => {
     if (!currentUser || !subjectId) return;
-    const unsubA = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "assignments"), where("subjectId", "==", subjectId)),
-      (snap) => setAssignments(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      () => {}
-    );
-    const unsubN = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "notes"), where("subjectId", "==", subjectId)),
-      (snap) => setNotes(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      () => {}
-    );
-    const unsubR = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "resources"), where("subjectId", "==", subjectId)),
-      (snap) => setResources(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      () => {}
-    );
+    const unsubA = assignmentsDb.subscribe(currentUser.uid, (items) => setAssignments(items), { subjectId });
+    const unsubN = notesDb.subscribe(currentUser.uid, (items) => setNotes(items), { subjectId });
+    const unsubR = resourcesDb.subscribe(currentUser.uid, (items) => setResources(items), { subjectId });
     return () => { unsubA(); unsubN(); unsubR(); };
   }, [currentUser, subjectId]);
 
@@ -238,14 +223,13 @@ export default function SubjectWorkspacePage() {
       const data = {
         subjectId, subjectName: subject?.name || "",
         title: noteTitle.trim() || "Untitled Note",
-        html, updatedAt: serverTimestamp(),
+        html,
       };
       if (editingNoteId) {
-        await deleteDoc(doc(db, "users", currentUser.uid, "notes", editingNoteId));
+        await notesDb.update(editingNoteId, data);
+      } else {
+        await notesDb.add(currentUser.uid, data);
       }
-      await addDoc(collection(db, "users", currentUser.uid, "notes"), {
-        ...data, createdAt: serverTimestamp(),
-      });
       setNoteEditorOpen(false);
       setEditingNoteId(null);
       setNoteTitle("");
@@ -259,7 +243,7 @@ export default function SubjectWorkspacePage() {
 
   const deleteNote = async (id) => {
     if (!confirm("Delete this note?")) return;
-    await deleteDoc(doc(db, "users", currentUser.uid, "notes", id));
+    await notesDb.delete(id);
     if (viewingNote?.id === id) setViewingNote(null);
   };
 
@@ -287,10 +271,9 @@ Do NOT include <html>, <head>, <body> tags. Only return the content HTML.`;
   const addResource = async () => {
     if (!resTitle.trim() || !resUrl.trim()) return;
     try {
-      await addDoc(collection(db, "users", currentUser.uid, "resources"), {
+      await resourcesDb.add(currentUser.uid, {
         subjectId, subjectName: subject?.name || "",
         title: resTitle.trim(), url: resUrl.trim(), category: resCategory,
-        createdAt: serverTimestamp(),
       });
       setResTitle(""); setResUrl(""); setResCategory("Article");
     } catch (err) {
@@ -300,7 +283,7 @@ Do NOT include <html>, <head>, <body> tags. Only return the content HTML.`;
 
   const deleteResource = async (id) => {
     if (!confirm("Delete this resource?")) return;
-    await deleteDoc(doc(db, "users", currentUser.uid, "resources", id));
+    await resourcesDb.delete(id);
   };
 
   const resourcesByCategory = useMemo(() => {

@@ -1,5 +1,4 @@
-import { doc, updateDoc, getDoc, increment } from "firebase/firestore";
-import { db } from "../firebase";
+import { getProfile, upsertProfile } from "../lib/supabaseDb";
 
 export const XP_PER_LEVEL = 500;
 export const MAX_LEVEL = 50;
@@ -152,11 +151,9 @@ export function checkTitles(gamification) {
 
 export async function awardXpAndCheckAchievements(uid, actionType, context = {}) {
   if (!uid) return { xpGained: 0, newAchievements: [], newTitles: [], newLevel: 1, levelUp: false };
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return { xpGained: 0, newAchievements: [], newTitles: [], newLevel: 1, levelUp: false };
-  const data = snap.data();
-  const g = { ...DEFAULT_GAMIFICATION, ...data.gamification, ...context };
+  const profile = await getProfile(uid);
+  if (!profile) return { xpGained: 0, newAchievements: [], newTitles: [], newLevel: 1, levelUp: false };
+  const g = { ...DEFAULT_GAMIFICATION, ...profile.gamification, ...context };
   const oldLevel = calculateLevel(g.xp).level;
   const xpGained = xpForAction(actionType, context);
   const newTotalXp = g.xp + xpGained;
@@ -167,18 +164,16 @@ export async function awardXpAndCheckAchievements(uid, actionType, context = {})
   const newTitles = checkTitles(updatedG);
   const unlockedAchievements = [...(g.achievements || []), ...newAchievements.map((a) => a.id)];
   const unlockedTitles = [...new Set([...(g.titles || []), ...newTitles.map((t) => t.id)])];
-  const updateData = {
-    gamification: {
-      ...g,
-      xp: newTotalXp,
-      level: newLevel,
-      achievements: unlockedAchievements,
-      titles: unlockedTitles,
-      ...(context.gamificationUpdate || {}),
-    },
+  const newGamification = {
+    ...g,
+    xp: newTotalXp,
+    level: newLevel,
+    achievements: unlockedAchievements,
+    titles: unlockedTitles,
+    ...(context.gamificationUpdate || {}),
   };
   try {
-    await updateDoc(userRef, updateData);
+    await upsertProfile(uid, { gamification: newGamification });
   } catch (err) {
     console.error("Failed to update gamification:", err);
   }
@@ -187,13 +182,11 @@ export async function awardXpAndCheckAchievements(uid, actionType, context = {})
 
 export async function incrementGamificationField(uid, field, amount = 1) {
   if (!uid) return;
-  const userRef = doc(db, "users", uid);
   try {
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const g = { ...DEFAULT_GAMIFICATION, ...data.gamification };
-    await updateDoc(userRef, {
+    const profile = await getProfile(uid);
+    if (!profile) return;
+    const g = { ...DEFAULT_GAMIFICATION, ...profile.gamification };
+    await upsertProfile(uid, {
       gamification: {
         ...g,
         [field]: (g[field] || 0) + amount,

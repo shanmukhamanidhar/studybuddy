@@ -6,8 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSubjects } from "../hooks/useSubjects";
 import { useGamification } from "../hooks/useGamification";
 import { generateAcademicAiResponse } from "../utils/gemini";
-import { db } from "../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { practiceHistoryDb } from "../lib/supabaseDb";
 
 export default function PracticePage() {
   const { currentUser } = useAuth();
@@ -50,22 +49,18 @@ export default function PracticePage() {
       id: "general",
     };
 
-  // Save practice session to Firestore history
+  // Save practice session to Supabase history
   const saveToHistory = async (type, data) => {
     if (!currentUser?.uid) return;
     try {
-      await addDoc(
-        collection(db, "users", currentUser.uid, "practiceHistory"),
-        {
-          type,
-          subjectName: selectedSubject?.name || "General",
-          subjectId: selectedSubject?.id || "general",
-          topic: topicPrompt.trim() || null,
-          difficulty,
-          ...data,
-          createdAt: serverTimestamp(),
-        },
-      );
+      await practiceHistoryDb.add(currentUser.uid, {
+        type,
+        subjectName: selectedSubject?.name || "General",
+        subjectId: selectedSubject?.id || "general",
+        topic: topicPrompt.trim() || null,
+        difficulty,
+        ...data,
+      });
     } catch (err) {
       console.error("Failed to save practice history:", err);
     }

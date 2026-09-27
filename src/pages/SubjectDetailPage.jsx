@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { getProfile } from "../lib/supabaseDb";
 import Navbar from "../components/Navbar";
 
 export default function SubjectDetailPage() {
@@ -20,10 +19,8 @@ export default function SubjectDetailPage() {
       if (!currentUser || !subjectId) return;
       try {
         setLoading(true);
-        const userRef = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data();
+        const data = await getProfile(currentUser.uid);
+        if (data) {
           const subjects = Array.isArray(data.subjects) ? data.subjects : [];
           const found = subjects.find((s, idx) => s.id === subjectId || String(s.id) === String(subjectId) || String(idx) === String(subjectId));
           setSubject(found || null);

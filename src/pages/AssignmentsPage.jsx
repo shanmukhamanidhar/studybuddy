@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
-import {
-  collection,
-  query,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  orderBy,
-} from "firebase/firestore";
+import { assignmentsDb } from "../lib/supabaseDb";
 import { useSubjects } from "../hooks/useSubjects";
 import { useGamification } from "../hooks/useGamification";
 import { parseTaskWithGemini } from "../utils/naturalLanguageTask";
@@ -54,39 +43,25 @@ export default function AssignmentsPage() {
   );
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Firestore Realtime Subscription
+  // Supabase Realtime Subscription
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(
-      collection(db, "users", currentUser.uid, "assignments"),
-      orderBy("createdAt", "desc")
-    );
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const loaded = snap.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: data.title || "",
-            subjectId: data.subjectId || "general",
-            subjectName: data.subjectName || "General Academic",
-            deadline: data.deadline || new Date().toISOString().split("T")[0],
-            priority: data.priority || "Medium",
-            status: data.status || (data.status === "Completed" ? "Done" : "To-do"),
-            recurrence: data.recurrence || "None",
-            reminderOffset: data.reminderOffset || "1_day_before",
-            createdAt: data.createdAt,
-          };
-        });
-        setAssignments(loaded);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Firestore loading error:", error);
-        setLoading(false);
-      }
-    );
+    const unsub = assignmentsDb.subscribe(currentUser.uid, (items) => {
+      const loaded = items.map((data) => ({
+        id: data.id,
+        title: data.title || "",
+        subjectId: data.subjectId || "general",
+        subjectName: data.subjectName || "General Academic",
+        deadline: data.deadline || data.dueDate || new Date().toISOString().split("T")[0],
+        priority: data.priority || "Medium",
+        status: data.status || (data.status === "Completed" ? "Done" : "To-do"),
+        recurrence: data.recurrence || "None",
+        reminderOffset: data.reminderOffset || "1_day_before",
+        createdAt: data.createdAt,
+      }));
+      setAssignments(loaded);
+      setLoading(false);
+    });
     return () => unsub();
   }, [currentUser]);
 
@@ -122,7 +97,7 @@ export default function AssignmentsPage() {
     setIsAiParsing(true);
     try {
       const task = await parseTaskWithGemini(nlInput, subjects);
-      await addDoc(collection(db, "users", currentUser.uid, "assignments"), {
+      await assignmentsDb.add(currentUser.uid, {
         title: task.title,
         subjectId: task.subjectId,
         subjectName: task.subjectName,
@@ -131,7 +106,6 @@ export default function AssignmentsPage() {
         status: task.status,
         recurrence: task.recurrence,
         reminderOffset: task.reminderOffset,
-        createdAt: serverTimestamp(),
       });
 
       setToastMessage(`✨ Added "${task.title}" via Gemini AI`);
@@ -160,21 +134,7 @@ export default function AssignmentsPage() {
     const subName = selectedSub?.name || "General Academic";
 
     if (editingItem) {
-      await updateDoc(
-        doc(db, "users", currentUser.uid, "assignments", editingItem.id),
-        {
-          title: title.trim(),
-          subjectId: subjectId || "general",
-          subjectName: subName,
-          deadline: deadline || new Date().toISOString().split("T")[0],
-          priority,
-          status,
-          recurrence,
-          reminderOffset,
-        }
-      );
-    } else {
-      await addDoc(collection(db, "users", currentUser.uid, "assignments"), {
+      await assignmentsDb.update(editingItem.id, {
         title: title.trim(),
         subjectId: subjectId || "general",
         subjectName: subName,
@@ -183,7 +143,17 @@ export default function AssignmentsPage() {
         status,
         recurrence,
         reminderOffset,
-        createdAt: serverTimestamp(),
+      });
+    } else {
+      await assignmentsDb.add(currentUser.uid, {
+        title: title.trim(),
+        subjectId: subjectId || "general",
+        subjectName: subName,
+        deadline: deadline || new Date().toISOString().split("T")[0],
+        priority,
+        status,
+        recurrence,
+        reminderOffset,
       });
     }
 
@@ -193,8 +163,7 @@ export default function AssignmentsPage() {
   // Toggle or Update Status & Handle Recurrence Workflow
   const handleUpdateStatus = async (item, newStatus) => {
     if (!currentUser) return;
-    const itemRef = doc(db, "users", currentUser.uid, "assignments", item.id);
-    await updateDoc(itemRef, { status: newStatus });
+    await assignmentsDb.update(item.id, { status: newStatus });
 
     // Award XP when marking assignment as done
     if (newStatus === "Done" && item.status !== "Done") {
@@ -217,7 +186,7 @@ export default function AssignmentsPage() {
 
       const nextDeadlineStr = nextDue.toISOString().split("T")[0];
 
-      await addDoc(collection(db, "users", currentUser.uid, "assignments"), {
+      await assignmentsDb.add(currentUser.uid, {
         title: item.title,
         subjectId: item.subjectId,
         subjectName: item.subjectName,
@@ -226,7 +195,6 @@ export default function AssignmentsPage() {
         status: "To-do",
         recurrence: item.recurrence,
         reminderOffset: item.reminderOffset,
-        createdAt: serverTimestamp(),
       });
 
       setToastMessage(`🔄 Next ${item.recurrence.toLowerCase()} task scheduled for ${nextDeadlineStr}`);
@@ -237,7 +205,7 @@ export default function AssignmentsPage() {
   // Delete Task
   const handleDelete = async (id) => {
     if (!currentUser) return;
-    await deleteDoc(doc(db, "users", currentUser.uid, "assignments", id));
+    await assignmentsDb.delete(id);
   };
 
   // Open Modal Helper

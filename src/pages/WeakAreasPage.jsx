@@ -5,8 +5,12 @@ import SidebarLayout from "../components/layout/SidebarLayout";
 import { useAuth } from "../context/AuthContext";
 import { useSubjects } from "../hooks/useSubjects";
 import { useGamification } from "../hooks/useGamification";
-import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
+import {
+  studySessionsDb,
+  practiceHistoryDb,
+  assignmentsDb,
+  subscribeProfile,
+} from "../lib/supabaseDb";
 import { aggregatePerformanceData, computeStrengthScores, analyzeWeakAreas } from "../utils/weakAreas";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from "recharts";
 import { WeakAreasSkeleton } from "../components/studyspace/SkeletonLoader";
@@ -64,29 +68,26 @@ export default function WeakAreasPage() {
     let loaded = 0;
     const checkDone = () => { loaded++; if (loaded === 3) setDataLoading(false); };
 
-    const unsubSessions = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "studySessions"), orderBy("createdAt", "desc")),
-      (snap) => { setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); checkDone(); },
-      () => checkDone()
-    );
-    const unsubQuizzes = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "practiceHistory"), orderBy("createdAt", "desc")),
-      (snap) => { setQuizzes(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); checkDone(); },
-      () => checkDone()
-    );
-    const unsubAssignments = onSnapshot(
-      query(collection(db, "users", currentUser.uid, "assignments"), orderBy("createdAt", "desc")),
-      (snap) => { setAssignments(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); checkDone(); },
-      () => checkDone()
-    );
+    const unsubSessions = studySessionsDb.subscribe(currentUser.uid, (items) => {
+      setSessions(items);
+      checkDone();
+    });
+    const unsubQuizzes = practiceHistoryDb.subscribe(currentUser.uid, (items) => {
+      setQuizzes(items);
+      checkDone();
+    });
+    const unsubAssignments = assignmentsDb.subscribe(currentUser.uid, (items) => {
+      setAssignments(items);
+      checkDone();
+    });
 
     return () => { unsubSessions(); unsubQuizzes(); unsubAssignments(); };
   }, [currentUser?.uid]);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", currentUser.uid), (snap) => {
-      if (snap.exists()) setMarks(snap.data().marks || {});
+    const unsub = subscribeProfile(currentUser.uid, (profile) => {
+      if (profile) setMarks(profile.marks || {});
     });
     return () => unsub();
   }, [currentUser?.uid]);

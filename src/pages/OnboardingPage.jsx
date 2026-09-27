@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { upsertProfile } from "../lib/supabaseDb";
 import Navbar from "../components/Navbar";
 
 const PERSONALITY_TRAITS = [
@@ -240,32 +239,28 @@ export default function OnboardingPage() {
 
     try {
       setSaving(true);
-      const userRef = doc(db, "users", currentUser.uid);
-      await setDoc(
-        userRef,
-        {
-          onboardingCompleted: true,
-          onboardingData: {
-            preferredName: preferredName.trim(),
-            branch: branch.trim(),
-            semester,
-            gradingSystem,
-            subjects,
-            personalityTraits,
-            selfDescription,
-            evaluationPattern: gradingSystem === "Relative" ? "Relative Grading" : evaluationPattern,
-            previousGPAs,
-            cgpa,
-            marks,
-            selectedGoals,
-            targetSGPA,
-            targetCGPA,
-            studyHours,
-          },
-          updatedAt: serverTimestamp(),
+      await upsertProfile(currentUser.uid, {
+        onboardingCompleted: true,
+        displayName: preferredName.trim(),
+        subjects,
+        onboardingData: {
+          preferredName: preferredName.trim(),
+          branch: branch.trim(),
+          semester,
+          gradingSystem,
+          subjects,
+          personalityTraits,
+          selfDescription,
+          evaluationPattern: gradingSystem === "Relative" ? "Relative Grading" : evaluationPattern,
+          previousGPAs,
+          cgpa,
+          marks,
+          selectedGoals,
+          targetSGPA,
+          targetCGPA,
+          studyHours,
         },
-        { merge: true }
-      );
+      });
       navigate("/app");
     } catch (err) {
       console.error("Error saving onboarding:", err);

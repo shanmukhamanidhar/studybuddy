@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
 import { useSubjects } from "../hooks/useSubjects";
-import { db } from "../firebase";
-import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { resourcesDb } from "../lib/supabaseDb";
 import { FormCardSkeleton, ResourceCardSkeleton } from "../components/studyspace/SkeletonLoader";
 
 export default function ResourcesPage() {
@@ -18,11 +17,10 @@ export default function ResourcesPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(collection(db, "users", currentUser.uid, "resources"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setResources(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsub = resourcesDb.subscribe(currentUser.uid, (items) => {
+      setResources(items);
       setLoading(false);
-    }, () => setLoading(false));
+    });
     return () => unsub();
   }, [currentUser]);
 
@@ -30,12 +28,11 @@ export default function ResourcesPage() {
     e.preventDefault();
     if (!title.trim() || !currentUser) return;
     const selectedSub = subjects.find((s) => s.id === subjectId);
-    await addDoc(collection(db, "users", currentUser.uid, "resources"), {
+    await resourcesDb.add(currentUser.uid, {
       title: title.trim(),
       url: url.trim(),
       subjectId: subjectId || "general",
       subjectName: selectedSub?.name || "General Resource",
-      createdAt: serverTimestamp(),
     });
     setTitle("");
     setUrl("");

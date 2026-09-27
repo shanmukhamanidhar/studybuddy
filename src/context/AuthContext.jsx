@@ -1,14 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-} from "firebase/auth";
-import { doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db, isFirebaseConfigured, missingFirebaseEnvVars, firebaseInitError } from "../firebase";
+import { supabase, isSupabaseConfigured, missingSupabaseEnvVars } from "../lib/supabase";
+import { getProfile, upsertProfile, subscribeProfile } from "../lib/supabaseDb";
 import { DEFAULT_GAMIFICATION } from "../utils/gamification";
 
 const AuthContext = createContext();
@@ -35,34 +27,47 @@ export function getUserInitials(user) {
 }
 
 /**
- * Stores/Syncs User Document into Firestore 'users' collection
+ * Formats a Supabase user object into the structure expected by StudyBuddy components,
+ * ensuring `.uid` exists alongside `.id`.
+ */
+function formatAuthUser(user) {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  const displayName = meta.full_name || meta.name || meta.displayName || user.email?.split("@")[0] || "";
+  const photoURL = meta.avatar_url || meta.picture || meta.photoURL || null;
+
+  return {
+    ...user,
+    uid: user.id,
+    displayName,
+    photoURL,
+  };
+}
+
+/**
+ * Stores/Syncs User Document into Supabase 'profiles' table.
+ * Preserves the name `syncUserDataToFirestore` for backwards compatibility with existing callers.
  */
 export async function syncUserDataToFirestore(user, additionalData = {}) {
-  if (!user || !db) return;
+  if (!user || !isSupabaseConfigured || !supabase) return;
+  const uid = user.id || user.uid;
   try {
-    const userRef = doc(db, "users", user.uid);
-    const snap = await getDoc(userRef);
+    const meta = user.user_metadata || {};
+    const displayName = user.displayName || meta.full_name || meta.name || additionalData.displayName || "";
+    const photoURL = user.photoURL || meta.avatar_url || meta.picture || null;
 
-    const userData = {
-      uid: user.uid,
+    const profileData = {
       email: user.email || "",
-      displayName: user.displayName || additionalData.displayName || "",
-      photoURL: user.photoURL || null,
-      providerId: user.providerData?.[0]?.providerId || "password",
+      displayName,
+      photoURL,
+      providerId: user.app_metadata?.provider || "email",
       lastLoginAt: new Date().toISOString(),
-      updatedAt: serverTimestamp(),
       ...additionalData,
     };
 
-    if (!snap.exists()) {
-      userData.createdAt = new Date().toISOString();
-      userData.onboardingCompleted = false;
-      userData.gamification = DEFAULT_GAMIFICATION;
-    }
-
-    await setDoc(userRef, userData, { merge: true });
+    return await upsertProfile(uid, profileData);
   } catch (err) {
-    console.warn("Firestore user sync notice:", err);
+    console.warn("[StudyBuddy Supabase] sync user profile notice:", err);
   }
 }
 
@@ -74,85 +79,158 @@ export function AuthProvider({ children }) {
 
   // Email/Password Login
   const loginWithEmail = async (email, password) => {
-    if (!auth) {
+    if (!isSupabaseConfigured || !supabase) {
       throw new Error(
-        `Firebase Auth is not initialized. Missing environment variables: ${missingFirebaseEnvVars.join(", ")}`
+        `Supabase is not configured. Missing environment variables: ${missingSupabaseEnvVars.join(", ")}`
       );
     }
-    const res = await signInWithEmailAndPassword(auth, email, password);
-    await syncUserDataToFirestore(res.user);
-    return res;
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      const customError = new Error(error.message);
+      if (
+        error.message.toLowerCase().includes("invalid login credentials") ||
+        error.message.toLowerCase().includes("invalid grant")
+      ) {
+        customError.code = "auth/invalid-credential";
+      }
+      throw customError;
+    }
+
+    const formattedUser = formatAuthUser(data.user);
+    setCurrentUser(formattedUser);
+    await syncUserDataToFirestore(formattedUser);
+    return { user: formattedUser, session: data.session };
   };
 
   // Email/Password Register
   const registerWithEmail = async (email, password, displayName) => {
-    if (!auth) {
+    if (!isSupabaseConfigured || !supabase) {
       throw new Error(
-        `Firebase Auth is not initialized. Missing environment variables: ${missingFirebaseEnvVars.join(", ")}`
+        `Supabase is not configured. Missing environment variables: ${missingSupabaseEnvVars.join(", ")}`
       );
     }
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName) {
-      await updateProfile(res.user, { displayName });
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: displayName?.trim() || "",
+          name: displayName?.trim() || "",
+        },
+      },
+    });
+
+    if (error) {
+      const customError = new Error(error.message);
+      if (
+        error.message.toLowerCase().includes("already registered") ||
+        error.message.toLowerCase().includes("already exists") ||
+        error.message.toLowerCase().includes("user already registered")
+      ) {
+        customError.code = "auth/email-already-in-use";
+      } else if (error.message.toLowerCase().includes("weak password")) {
+        customError.code = "auth/weak-password";
+      }
+      throw customError;
     }
-    await syncUserDataToFirestore(res.user, { displayName });
-    return res;
+
+    const formattedUser = formatAuthUser(data.user);
+    if (formattedUser) {
+      setCurrentUser(formattedUser);
+      await syncUserDataToFirestore(formattedUser, { displayName });
+    }
+    return { user: formattedUser, session: data.session };
   };
 
   // Google OAuth Login
   const loginWithGoogle = async () => {
-    if (!auth || !googleProvider) {
+    if (!isSupabaseConfigured || !supabase) {
       throw new Error(
-        `Firebase Auth is not initialized. Missing environment variables: ${missingFirebaseEnvVars.join(", ")}`
+        `Supabase is not configured. Missing environment variables: ${missingSupabaseEnvVars.join(", ")}`
       );
     }
-    const res = await signInWithPopup(auth, googleProvider);
-    await syncUserDataToFirestore(res.user);
-    return res;
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) throw error;
+    return data;
   };
 
   // Logout
   const logout = async () => {
-    if (!auth) return;
-    return await signOut(auth);
+    if (!isSupabaseConfigured || !supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setCurrentUser(null);
+    setUserProfile(null);
   };
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
+    if (!isSupabaseConfigured || !supabase) {
       setLoading(false);
       setProfileLoaded(true);
       return;
     }
 
-    let unsubDoc = null;
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      if (user) {
-        syncUserDataToFirestore(user);
-        const userRef = doc(db, "users", user.uid);
-        unsubDoc = onSnapshot(userRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setUserProfile(docSnap.data());
+    let unsubProfile = null;
+
+    const setupUser = (rawUser) => {
+      if (rawUser) {
+        const formatted = formatAuthUser(rawUser);
+        setCurrentUser(formatted);
+        syncUserDataToFirestore(formatted);
+
+        if (unsubProfile) unsubProfile();
+        unsubProfile = subscribeProfile(formatted.uid, (profile) => {
+          if (profile) {
+            setUserProfile(profile);
           } else {
             setUserProfile(null);
           }
           setProfileLoaded(true);
           setLoading(false);
-        }, (err) => {
-          console.warn("Firestore onSnapshot error:", err);
-          setProfileLoaded(true);
-          setLoading(false);
         });
       } else {
+        if (unsubProfile) {
+          unsubProfile();
+          unsubProfile = null;
+        }
+        setCurrentUser(null);
         setUserProfile(null);
         setProfileLoaded(true);
         setLoading(false);
       }
+    };
+
+    // 1. Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setupUser(session?.user || null);
+    }).catch((err) => {
+      console.warn("[StudyBuddy Supabase] getSession notice:", err);
+      setLoading(false);
+      setProfileLoaded(true);
+    });
+
+    // 2. Realtime auth state listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setupUser(session?.user || null);
     });
 
     return () => {
-      if (typeof unsubscribeAuth === "function") unsubscribeAuth();
-      if (unsubDoc) unsubDoc();
+      subscription?.unsubscribe();
+      if (unsubProfile) unsubProfile();
     };
   }, []);
 
@@ -166,33 +244,32 @@ export function AuthProvider({ children }) {
     syncUserDataToFirestore,
     loading,
     profileLoaded,
-    isFirebaseConfigured,
-    missingFirebaseEnvVars,
-    firebaseInitError,
+    isSupabaseConfigured,
+    missingSupabaseEnvVars,
   };
 
-  if (!isFirebaseConfigured) {
+  if (!isSupabaseConfigured) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 selection:bg-indigo-500 selection:text-white">
         <div className="max-w-xl w-full bg-slate-900/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60">
           <div className="flex items-center gap-3 text-amber-400 mb-4">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/30 text-2xl font-bold">
-              ⚠️
+              ⚡
             </span>
             <div>
-              <h1 className="text-xl font-bold text-slate-100">Firebase Configuration Required</h1>
+              <h1 className="text-xl font-bold text-slate-100">Supabase Configuration Required</h1>
               <p className="text-xs text-amber-400/90 font-medium">Missing environment variables detected</p>
             </div>
           </div>
           <p className="text-sm text-slate-300 mb-5 leading-relaxed">
-            StudyBuddy could not connect to Firebase because required environment variables are missing in this environment.
+            StudyBuddy is ready to connect with Supabase, but the required environment variables have not been configured yet.
           </p>
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-6">
             <p className="text-xs uppercase tracking-wider font-semibold text-amber-400 mb-2">
               Missing Variable(s):
             </p>
             <ul className="text-xs font-mono text-rose-300 space-y-1.5">
-              {missingFirebaseEnvVars.map((v) => (
+              {missingSupabaseEnvVars.map((v) => (
                 <li key={v} className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                   <span>{v}</span>
@@ -201,12 +278,12 @@ export function AuthProvider({ children }) {
             </ul>
           </div>
           <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4 text-xs text-slate-300 space-y-2">
-            <p className="font-semibold text-indigo-300">How to fix on Vercel:</p>
+            <p className="font-semibold text-indigo-300">How to configure on Vercel:</p>
             <ol className="list-decimal list-inside space-y-1 text-slate-400">
               <li>Open your project dashboard on <span className="text-slate-200">vercel.com</span>.</li>
               <li>Navigate to <strong className="text-slate-200">Settings</strong> &rarr; <strong className="text-slate-200">Environment Variables</strong>.</li>
-              <li>Add the variable names above using the credentials from your Firebase Project Console.</li>
-              <li>Trigger a <strong className="text-slate-200">Redeploy</strong> (or push a new commit) for Vercel to rebuild with these variables.</li>
+              <li>Add the variable names above with your Supabase Project URL and public anon key.</li>
+              <li>Trigger a <strong className="text-slate-200">Redeploy</strong> to apply the changes.</li>
             </ol>
           </div>
         </div>

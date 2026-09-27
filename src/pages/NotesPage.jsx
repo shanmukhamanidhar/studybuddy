@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import SidebarLayout from "../components/layout/SidebarLayout";
 import { useSubjects } from "../hooks/useSubjects";
-import { db } from "../firebase";
-import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { notesDb } from "../lib/supabaseDb";
 import { FormCardSkeleton, NoteCardSkeleton } from "../components/studyspace/SkeletonLoader";
 
 export default function NotesPage() {
@@ -17,11 +16,10 @@ export default function NotesPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(collection(db, "users", currentUser.uid, "notes"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setNotes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const unsub = notesDb.subscribe(currentUser.uid, (items) => {
+      setNotes(items);
       setLoading(false);
-    }, () => setLoading(false));
+    });
     return () => unsub();
   }, [currentUser]);
 
@@ -29,12 +27,11 @@ export default function NotesPage() {
     e.preventDefault();
     if (!noteTitle.trim() || !currentUser) return;
     const selectedSub = subjects.find((s) => s.id === selectedSubId);
-    await addDoc(collection(db, "users", currentUser.uid, "notes"), {
+    await notesDb.add(currentUser.uid, {
       title: noteTitle.trim(),
       content: noteContent,
       subjectId: selectedSubId || "general",
       subjectName: selectedSub?.name || "General Notes",
-      createdAt: serverTimestamp(),
     });
     setNoteTitle("");
     setNoteContent("");

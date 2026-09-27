@@ -2,8 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSubjects } from "../hooks/useSubjects";
 import SidebarLayout from "../components/layout/SidebarLayout";
-import { db } from "../firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { upsertProfile } from "../lib/supabaseDb";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -175,10 +174,12 @@ export default function AcademicsPage() {
 
   const saveAcademic = async () => {
     if (!currentUser) return;
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      "academicInfo.branch": editBranch,
-      "academicInfo.semester": editSemester,
-      updatedAt: serverTimestamp(),
+    await upsertProfile(currentUser.uid, {
+      academicInfo: {
+        ...(profile.academicInfo || {}),
+        branch: editBranch,
+        semester: editSemester,
+      },
     });
     setEditSection(null);
     showMsg("Academic info updated.");
@@ -186,12 +187,14 @@ export default function AcademicsPage() {
 
   const saveGoals = async () => {
     if (!currentUser) return;
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      "goals.selectedGoals": editGoals,
-      "goals.targetSGPA": editTargetSGPA,
-      "goals.targetCGPA": editTargetCGPA,
-      "goals.studyHours": editStudyHours,
-      updatedAt: serverTimestamp(),
+    await upsertProfile(currentUser.uid, {
+      goals: {
+        ...(profile.goals || {}),
+        selectedGoals: editGoals,
+        targetSGPA: editTargetSGPA,
+        targetCGPA: editTargetCGPA,
+        studyHours: editStudyHours,
+      },
     });
     setEditSection(null);
     showMsg("Goals updated.");
@@ -200,9 +203,8 @@ export default function AcademicsPage() {
   const saveMarks = async () => {
     if (!currentUser || !editMarksSubject) return;
     const updatedMarks = { ...marks, [editMarksSubject]: editMarksData };
-    await updateDoc(doc(db, "users", currentUser.uid), {
+    await upsertProfile(currentUser.uid, {
       marks: updatedMarks,
-      updatedAt: serverTimestamp(),
     });
     setEditMarksSubject(null);
     showMsg("Marks updated.");
